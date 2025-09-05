@@ -1,0 +1,457 @@
+{
+  "name": "Kenny Router Agent",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "kenny-router",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "id": "ba9b8a46-5a0a-4aeb-9b16-7d3c3e3bc1ff",
+      "name": "Webhook",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 1,
+      "position": [
+        240,
+        300
+      ],
+      "webhookId": "kenny-router"
+    },
+    {
+      "parameters": {
+        "resource": "chat",
+        "operation": "create",
+        "model": "qwen2.5:7b",
+        "options": {
+          "temperature": 0.1
+        },
+        "prompt": "=You are Kenny's intent classification system. Analyze the user query and classify it into one of these categories:\n\n**Categories:**\n- `search` - Information retrieval, finding data, web search, document search\n- `digest` - Weekly summaries, reports, analytics, insights\n- `calendar` - Scheduling, events, meetings, appointments\n- `memory` - Contacts, relationships, personal information recall\n- `general` - Everything else, casual conversation, help requests\n\n**User Query:** {{ $json.body.message || $json.body.query || $json.body.text }}\n\n**Rules:**\n- Respond with ONLY the category name (search/digest/calendar/memory/general)\n- No explanations or additional text\n- Be decisive - choose the best match"
+      },
+      "id": "c7f8d2e1-4b3a-4c5e-8f9e-1a2b3c4d5e6f",
+      "name": "Intent Classification",
+      "type": "n8n-nodes-base.ollama",
+      "typeVersion": 1,
+      "position": [
+        460,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict"
+          },
+          "conditions": [
+            {
+              "leftValue": "={{ $json.response.trim().toLowerCase() }}",
+              "rightValue": "search",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "d8e9f1a2-5c6b-4d7e-9f0a-2b3c4d5e6f7g",
+      "name": "Route Search",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [
+        680,
+        200
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict"
+          },
+          "conditions": [
+            {
+              "leftValue": "={{ $json.response.trim().toLowerCase() }}",
+              "rightValue": "digest",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "e9f0a1b2-6d7c-5e8f-0a1b-3c4d5e6f7g8h",
+      "name": "Route Digest",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [
+        680,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict"
+          },
+          "conditions": [
+            {
+              "leftValue": "={{ $json.response.trim().toLowerCase() }}",
+              "rightValue": "calendar",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "f0a1b2c3-7e8d-6f9a-1b2c-4d5e6f7g8h9i",
+      "name": "Route Calendar",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [
+        680,
+        400
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict"
+          },
+          "conditions": [
+            {
+              "leftValue": "={{ $json.response.trim().toLowerCase() }}",
+              "rightValue": "memory",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "a1b2c3d4-8f9e-7a0b-2c3d-5e6f7g8h9i0j",
+      "name": "Route Memory",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [
+        680,
+        500
+      ]
+    },
+    {
+      "parameters": {
+        "resource": "chat",
+        "operation": "create",
+        "model": "qwen2.5:7b",
+        "options": {
+          "temperature": 0.7
+        },
+        "prompt": "=You are Kenny, a helpful AI assistant. The user asked: {{ $('Webhook').first().json.body.message || $('Webhook').first().json.body.query || $('Webhook').first().json.body.text }}\n\nThis was classified as a SEARCH query. Help the user find the information they need.\n\nProvide a helpful response that acknowledges this is a search request and explain what you would do to help them find this information."
+      },
+      "id": "b2c3d4e5-9a0b-8c1d-3e4f-6g7h8i9j0k1l",
+      "name": "Search Agent",
+      "type": "n8n-nodes-base.ollama",
+      "typeVersion": 1,
+      "position": [
+        900,
+        200
+      ]
+    },
+    {
+      "parameters": {
+        "resource": "chat",
+        "operation": "create",
+        "model": "qwen2.5:7b",
+        "options": {
+          "temperature": 0.7
+        },
+        "prompt": "=You are Kenny, a helpful AI assistant. The user asked: {{ $('Webhook').first().json.body.message || $('Webhook').first().json.body.query || $('Webhook').first().json.body.text }}\n\nThis was classified as a DIGEST query. Help the user with summaries and insights.\n\nProvide a helpful response that acknowledges this is a digest request and explain what kind of summary or analysis you would provide."
+      },
+      "id": "c3d4e5f6-0b1c-9d2e-4f5g-7h8i9j0k1l2m",
+      "name": "Digest Agent",
+      "type": "n8n-nodes-base.ollama",
+      "typeVersion": 1,
+      "position": [
+        900,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "resource": "chat",
+        "operation": "create",
+        "model": "qwen2.5:7b",
+        "options": {
+          "temperature": 0.7
+        },
+        "prompt": "=You are Kenny, a helpful AI assistant. The user asked: {{ $('Webhook').first().json.body.message || $('Webhook').first().json.body.query || $('Webhook').first().json.body.text }}\n\nThis was classified as a CALENDAR query. Help the user with scheduling and events.\n\nProvide a helpful response that acknowledges this is a calendar request and explain what you would do to help them manage their schedule."
+      },
+      "id": "d4e5f6g7-1c2d-0e3f-5g6h-8i9j0k1l2m3n",
+      "name": "Calendar Agent",
+      "type": "n8n-nodes-base.ollama",
+      "typeVersion": 1,
+      "position": [
+        900,
+        400
+      ]
+    },
+    {
+      "parameters": {
+        "resource": "chat",
+        "operation": "create",
+        "model": "qwen2.5:7b",
+        "options": {
+          "temperature": 0.7
+        },
+        "prompt": "=You are Kenny, a helpful AI assistant. The user asked: {{ $('Webhook').first().json.body.message || $('Webhook').first().json.body.query || $('Webhook').first().json.body.text }}\n\nThis was classified as a MEMORY query. Help the user recall contacts and personal information.\n\nProvide a helpful response that acknowledges this is a memory request and explain what you would do to help them remember or organize their personal information."
+      },
+      "id": "e5f6g7h8-2d3e-1f4g-6h7i-9j0k1l2m3n4o",
+      "name": "Memory Agent",
+      "type": "n8n-nodes-base.ollama",
+      "typeVersion": 1,
+      "position": [
+        900,
+        500
+      ]
+    },
+    {
+      "parameters": {
+        "resource": "chat",
+        "operation": "create",
+        "model": "qwen2.5:7b",
+        "options": {
+          "temperature": 0.7
+        },
+        "prompt": "=You are Kenny, a helpful AI assistant. The user asked: {{ $('Webhook').first().json.body.message || $('Webhook').first().json.body.query || $('Webhook').first().json.body.text }}\n\nThis was classified as a GENERAL query. Provide a helpful response to the user's question.\n\nBe conversational and helpful while providing a useful answer to their query."
+      },
+      "id": "f6g7h8i9-3e4f-2g5h-7i8j-0k1l2m3n4o5p",
+      "name": "General Agent",
+      "type": "n8n-nodes-base.ollama",
+      "typeVersion": 1,
+      "position": [
+        900,
+        600
+      ]
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={\n  \"response\": {{ JSON.stringify($json.response) }},\n  \"intent\": {{ JSON.stringify($('Intent Classification').first().json.response.trim().toLowerCase()) }},\n  \"timestamp\": {{ JSON.stringify(new Date().toISOString()) }},\n  \"status\": \"success\"\n}",
+        "options": {}
+      },
+      "id": "g7h8i9j0-4f5g-3h6i-8j9k-1l2m3n4o5p6q",
+      "name": "Response",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1,
+      "position": [
+        1120,
+        400
+      ]
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={\n  \"response\": \"I encountered an error processing your request. Please try again.\",\n  \"intent\": \"error\",\n  \"timestamp\": {{ JSON.stringify(new Date().toISOString()) }},\n  \"status\": \"error\",\n  \"error\": {{ JSON.stringify($json.error?.message || \"Unknown error\") }}\n}",
+        "options": {}
+      },
+      "id": "h8i9j0k1-5g6h-4i7j-9k0l-2m3n4o5p6q7r",
+      "name": "Error Response",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1,
+      "position": [
+        1120,
+        600
+      ]
+    }
+  ],
+  "connections": {
+    "Webhook": {
+      "main": [
+        [
+          {
+            "node": "Intent Classification",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Intent Classification": {
+      "main": [
+        [
+          {
+            "node": "Route Search",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Route Digest",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Route Calendar",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Route Memory",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "General Agent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Route Search": {
+      "main": [
+        [
+          {
+            "node": "Search Agent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Route Digest": {
+      "main": [
+        [
+          {
+            "node": "Digest Agent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Route Calendar": {
+      "main": [
+        [
+          {
+            "node": "Calendar Agent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Route Memory": {
+      "main": [
+        [
+          {
+            "node": "Memory Agent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Search Agent": {
+      "main": [
+        [
+          {
+            "node": "Response",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Digest Agent": {
+      "main": [
+        [
+          {
+            "node": "Response",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Calendar Agent": {
+      "main": [
+        [
+          {
+            "node": "Response",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Memory Agent": {
+      "main": [
+        [
+          {
+            "node": "Response",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "General Agent": {
+      "main": [
+        [
+          {
+            "node": "Response",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "1",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "kenny-router-v1"
+  },
+  "id": "1",
+  "tags": [
+    {
+      "createdAt": "2025-09-05T04:13:00.000Z",
+      "updatedAt": "2025-09-05T04:13:00.000Z",
+      "id": "1",
+      "name": "kenny"
+    },
+    {
+      "createdAt": "2025-09-05T04:13:00.000Z", 
+      "updatedAt": "2025-09-05T04:13:00.000Z",
+      "id": "2",
+      "name": "router"
+    }
+  ]
+}

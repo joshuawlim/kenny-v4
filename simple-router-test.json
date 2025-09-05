@@ -1,0 +1,78 @@
+{
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "kenny-test",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "id": "webhook-1",
+      "name": "Webhook",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 1,
+      "position": [240, 300],
+      "webhookId": "kenny-test"
+    },
+    {
+      "parameters": {
+        "url": "http://host.docker.internal:11434/api/generate",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"model\": \"qwen2.5:3b-instruct\",\n  \"prompt\": \"Classify this query into one category: search, digest, calendar, memory, or general. Query: {{ $json.body.message || 'hello' }}. Answer with just the category:\",\n  \"stream\": false\n}",
+        "options": {}
+      },
+      "id": "http-request-1",
+      "name": "Classify Intent",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.1,
+      "position": [460, 300]
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={\n  \"response\": \"I received your {{ $json.response.trim() }} request: \\\"{{ $('Webhook').first().json.body.message || 'hello' }}\\\"\",\n  \"intent\": \"{{ $json.response.trim() }}\",\n  \"timestamp\": \"{{ new Date().toISOString() }}\",\n  \"status\": \"success\"\n}",
+        "options": {}
+      },
+      "id": "response-1",
+      "name": "Response",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1,
+      "position": [680, 300]
+    }
+  ],
+  "connections": {
+    "Webhook": {
+      "main": [
+        [
+          {
+            "node": "Classify Intent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Classify Intent": {
+      "main": [
+        [
+          {
+            "node": "Response",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "1",
+  "meta": {
+    "templateCredsSetupCompleted": true
+  },
+  "id": "simple-router-test",
+  "name": "Kenny Simple Router Test"
+}
