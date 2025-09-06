@@ -1,0 +1,27 @@
+  selenium:
+    image: selenium/standalone-chrome:latest
+    container_name: selenium
+    restart: unless-stopped
+    ports:
+      - "4444:4444"
+      - "7900:7900"  # VNC viewer for debugging
+    environment:
+      - SE_VNC_NO_PASSWORD=1
+    volumes:
+      - /dev/shm:/dev/shm
+    cap_add:
+      - SYS_ADMIN
+
+  # Test automation service
+  automation-tests:
+    build: ./automation
+    container_name: n8n-automation
+    depends_on:
+      - selenium
+      - n8n
+    environment:
+      - SELENIUM_URL=http://selenium:4444
+      - N8N_URL=http://n8n:5678
+    volumes:
+      - ./automation/tests:/tests
+      - ./automation/reports:/reports

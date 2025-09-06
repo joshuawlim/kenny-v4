@@ -1,0 +1,56 @@
+{
+  "exclude_senders": [
+    "noreply@bank.com",
+    "security@financial.com",
+    "statements@creditcard.com",
+    "alerts@investment.com"
+  ],
+  "exclude_subjects": [
+    "password reset",
+    "account statement",
+    "tax document",
+    "medical records",
+    "insurance claim",
+    "legal notice",
+    "confidential"
+  ],
+  "exclude_keywords": [
+    "ssn",
+    "social security",
+    "account number",
+    "routing number",
+    "credit card",
+    "medical record",
+    "diagnosis",
+    "prescription",
+    "attorney-client privilege",
+    "confidential communication"
+  ],
+  "sensitive_domains": [
+    "banking.com",
+    "medical.com",
+    "legal.com",
+    "insurance.com",
+    "irs.gov",
+    "healthcare.gov"
+  ],
+  "privacy_levels": {
+    "strict": {
+      "description": "Maximum privacy - exclude all potentially sensitive content",
+      "apply_all_filters": true,
+      "minimum_confidence_threshold": 0.9
+    },
+    "moderate": {
+      "description": "Balanced approach - exclude obvious sensitive content",
+      "apply_keyword_filters": true,
+      "apply_domain_filters": true,
+      "minimum_confidence_threshold": 0.7
+    },
+    "minimal": {
+      "description": "Basic filtering - exclude only explicitly sensitive content",
+      "apply_keyword_filters": false,
+      "apply_domain_filters": false,
+      "minimum_confidence_threshold": 0.5
+    }
+  }
+}

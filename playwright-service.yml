@@ -1,0 +1,27 @@
+  playwright:
+    image: mcr.microsoft.com/playwright:focal
+    container_name: playwright
+    restart: unless-stopped
+    environment:
+      - DISPLAY=:99
+    volumes:
+      - ./automation/playwright:/tests
+      - ./automation/reports:/reports
+    working_dir: /tests
+    command: tail -f /dev/null  # Keep container running
+
+  # For n8n workflow automation
+  n8n-automation:
+    image: node:18-alpine
+    container_name: n8n-automation
+    depends_on:
+      - n8n
+    environment:
+      - N8N_URL=http://n8n:5678
+      - N8N_USER=${N8N_USER:-admin@example.com}
+      - N8N_PASSWORD=${N8N_PASSWORD:-password}
+    volumes:
+      - ./automation/scripts:/scripts
+      - ./automation/reports:/reports
+    working_dir: /scripts
+    command: tail -f /dev/null

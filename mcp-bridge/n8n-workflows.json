@@ -1,0 +1,175 @@
+{
+  "workflows": [
+    {
+      "name": "Apple MCP - Send Note",
+      "description": "Create a note in Apple Notes via MCP Bridge",
+      "nodes": [
+        {
+          "name": "Create Apple Note",
+          "type": "HTTP Request",
+          "method": "POST",
+          "url": "http://host.docker.internal:3003/notes/create",
+          "headers": {
+            "Content-Type": "application/json"
+          },
+          "body": {
+            "title": "{{ $json.noteTitle || 'Default Note Title' }}",
+            "body": "{{ $json.noteContent || 'Default note content from n8n workflow' }}",
+            "folderName": "{{ $json.folderName || 'Kenny' }}"
+          },
+          "responseFormat": "json"
+        }
+      ],
+      "example_input": {
+        "noteTitle": "Meeting Notes",
+        "noteContent": "Discussed quarterly planning and budget allocations",
+        "folderName": "Work"
+      }
+    },
+    {
+      "name": "Apple MCP - Send Email",
+      "description": "Send email via Apple Mail through MCP Bridge",
+      "nodes": [
+        {
+          "name": "Send Apple Mail",
+          "type": "HTTP Request",
+          "method": "POST",
+          "url": "http://host.docker.internal:3003/mail/send",
+          "headers": {
+            "Content-Type": "application/json"
+          },
+          "body": {
+            "to": "{{ $json.recipient }}",
+            "subject": "{{ $json.subject }}",
+            "body": "{{ $json.emailBody }}",
+            "cc": "{{ $json.cc }}",
+            "bcc": "{{ $json.bcc }}"
+          },
+          "responseFormat": "json"
+        }
+      ],
+      "example_input": {
+        "recipient": "team@company.com",
+        "subject": "Weekly Summary",
+        "emailBody": "Here's the weekly summary of our progress...",
+        "cc": "manager@company.com"
+      }
+    },
+    {
+      "name": "Apple MCP - Send Message",
+      "description": "Send iMessage/SMS via Apple Messages through MCP Bridge",
+      "nodes": [
+        {
+          "name": "Send Apple Message",
+          "type": "HTTP Request",
+          "method": "POST",
+          "url": "http://host.docker.internal:3003/messages/send",
+          "headers": {
+            "Content-Type": "application/json"
+          },
+          "body": {
+            "phoneNumber": "{{ $json.phoneNumber }}",
+            "message": "{{ $json.messageText }}"
+          },
+          "responseFormat": "json"
+        }
+      ],
+      "example_input": {
+        "phoneNumber": "+1234567890",
+        "messageText": "Automated notification: Your task has been completed!"
+      }
+    },
+    {
+      "name": "Apple MCP - Search Contacts",
+      "description": "Search Apple Contacts via MCP Bridge",
+      "nodes": [
+        {
+          "name": "Search Apple Contacts",
+          "type": "HTTP Request",
+          "method": "GET",
+          "url": "http://host.docker.internal:3003/contacts/search",
+          "parameters": {
+            "name": "{{ $json.searchName }}"
+          },
+          "responseFormat": "json"
+        }
+      ],
+      "example_input": {
+        "searchName": "John"
+      }
+    },
+    {
+      "name": "Apple MCP - Complete Workflow",
+      "description": "Multi-step workflow using multiple Apple apps",
+      "nodes": [
+        {
+          "name": "1. Search Contact",
+          "type": "HTTP Request",
+          "method": "GET", 
+          "url": "http://host.docker.internal:3003/contacts/search",
+          "parameters": {
+            "name": "{{ $json.contactName }}"
+          },
+          "responseFormat": "json"
+        },
+        {
+          "name": "2. Create Meeting Note",
+          "type": "HTTP Request",
+          "method": "POST",
+          "url": "http://host.docker.internal:3003/notes/create",
+          "headers": {
+            "Content-Type": "application/json"
+          },
+          "body": {
+            "title": "Meeting with {{ $json.contactName }}",
+            "body": "Meeting scheduled for {{ $json.meetingDate }}. Contact info: {{ $node['1. Search Contact'].json.result }}",
+            "folderName": "Meetings"
+          },
+          "responseFormat": "json"
+        },
+        {
+          "name": "3. Send Confirmation Email",
+          "type": "HTTP Request",
+          "method": "POST",
+          "url": "http://host.docker.internal:3003/mail/send",
+          "headers": {
+            "Content-Type": "application/json"
+          },
+          "body": {
+            "to": "{{ $json.email }}",
+            "subject": "Meeting Confirmation - {{ $json.meetingDate }}",
+            "body": "Hi {{ $json.contactName }}, this confirms our meeting on {{ $json.meetingDate }}. Meeting notes have been created."
+          },
+          "responseFormat": "json"
+        }
+      ],
+      "example_input": {
+        "contactName": "Sarah Johnson",
+        "meetingDate": "2024-01-15 2:00 PM",
+        "email": "sarah@company.com"
+      }
+    }
+  ],
+  "n8n_setup_instructions": [
+    "1. Open n8n workflow editor",
+    "2. Create new workflow",
+    "3. Add HTTP Request node",
+    "4. Configure with the settings above",
+    "5. Set URL to http://host.docker.internal:3003/[endpoint]",
+    "6. Ensure MCP Bridge is running: npm start in /mcp-bridge/",
+    "7. Test with example input data"
+  ],
+  "common_endpoints": {
+    "health": "GET http://host.docker.internal:3003/health",
+    "notes_create": "POST http://host.docker.internal:3003/notes/create",
+    "notes_list": "GET http://host.docker.internal:3003/notes/list",
+    "notes_search": "GET http://host.docker.internal:3003/notes/search?searchText=...",
+    "mail_send": "POST http://host.docker.internal:3003/mail/send",
+    "mail_search": "GET http://host.docker.internal:3003/mail/search?searchTerm=...",
+    "mail_accounts": "GET http://host.docker.internal:3003/mail/accounts",
+    "messages_send": "POST http://host.docker.internal:3003/messages/send",
+    "messages_read": "GET http://host.docker.internal:3003/messages/read?phoneNumber=...",
+    "contacts_search": "GET http://host.docker.internal:3003/contacts/search?name=...",
+    "contacts_list": "GET http://host.docker.internal:3003/contacts/list"
+  }
+}

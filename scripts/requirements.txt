@@ -1,0 +1,21 @@
+# Apple Mail Processing Requirements
+# Install with: pip install -r requirements.txt
+
+# Core email processing
+mailbox  # Built-in Python module for .mbox handling
+
+# Date and time handling  
+python-dateutil>=2.8.2
+
+# Database integration
+supabase>=2.0.0
+
+# Text processing and analysis
+regex>=2023.8.8
+
+# Data validation and cleaning
+jsonschema>=4.19.0
+
+# Optional: Advanced text processing
+# nltk>=3.8  # For better keyword extraction
+# spacy>=3.6.0  # For language detection and NLP
