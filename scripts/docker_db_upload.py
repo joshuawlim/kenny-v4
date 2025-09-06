@@ -133,52 +133,55 @@ class DockerDBUploader:
         return {"uploaded": uploaded_count, "failed": failed_count}
     
     def _create_batch_insert_sql(self, emails):
-        """Create SQL INSERT statements for a batch of emails"""
+        """Create SQL INSERT statements for a batch of emails using parameterized queries"""
         if not emails:
             return ""
         
-        sql_lines = []
+        # Use COPY format for bulk insert - more secure and efficient
+        copy_data = []
         
         for email in emails:
             try:
-                # Format email data
-                message_id = self._escape_sql_string(email.get('message_id', ''))
-                subject = self._escape_sql_string(email.get('subject', ''))
-                from_address = self._escape_sql_string(email.get('from_address', ''))
-                from_name = self._escape_sql_string(email.get('from_name', ''))
+                # Format email data - no need for manual escaping with COPY
+                message_id = email.get('message_id', '')
+                subject = email.get('subject', '')
+                from_address = email.get('from_address', '')
+                from_name = email.get('from_name', '')
                 to_addresses = json.dumps(email.get('to_addresses', []))
                 cc_addresses = json.dumps(email.get('cc_addresses', []))
-                body_text = self._escape_sql_string(email.get('body', ''))
-                date_sent = f"'{email.get('date_sent')}'" if email.get('date_sent') else 'NULL'
-                thread_id = self._escape_sql_string(email.get('thread_id', ''))
+                body_text = email.get('body', '')
+                date_sent = email.get('date_sent') or None
+                thread_id = email.get('thread_id', '')
                 keywords = json.dumps(email.get('keywords', []))
-                has_attachments = 'TRUE' if email.get('has_attachments', False) else 'FALSE'
+                has_attachments = email.get('has_attachments', False)
                 body_length = email.get('body_length', len(email.get('body', '')))
                 
-                insert_sql = f"""
-INSERT INTO kenny_emails (
-    message_id, subject, from_address, from_name, to_addresses, 
-    cc_addresses, body_text, date_sent, thread_id, keywords, 
-    has_attachments, body_length
-) VALUES (
-    '{message_id}', '{subject}', '{from_address}', '{from_name}', 
-    '{to_addresses}', '{cc_addresses}', '{body_text}', {date_sent}, 
-    '{thread_id}', '{keywords}', {has_attachments}, {body_length}
-) ON CONFLICT (message_id) DO NOTHING;
-"""
-                sql_lines.append(insert_sql)
+                # Create tab-separated row for COPY
+                row_data = [
+                    message_id, subject, from_address, from_name, 
+                    to_addresses, cc_addresses, body_text, date_sent,
+                    thread_id, keywords, str(has_attachments).lower(), str(body_length)
+                ]
+                
+                copy_data.append('\t'.join(str(x) if x is not None else '\\N' for x in row_data))
                 
             except Exception as e:
                 self.logger.warning(f"Skipping email due to formatting error: {e}")
                 continue
         
-        return '\n'.join(sql_lines)
-    
-    def _escape_sql_string(self, s):
-        """Escape SQL string to prevent injection"""
-        if not s:
+        if not copy_data:
             return ""
-        return str(s).replace("'", "''").replace('\n', '\\n').replace('\r', '\\r')
+            
+        # Generate COPY command
+        copy_sql = """
+COPY kenny_emails (
+    message_id, subject, from_address, from_name, to_addresses, 
+    cc_addresses, body_text, date_sent, thread_id, keywords, 
+    has_attachments, body_length
+) FROM STDIN WITH (FORMAT text, DELIMITER E'\\t', NULL '\\N');
+"""
+        
+        return copy_sql + '\n' + '\n'.join(copy_data) + '\n\\.'
     
     def get_table_stats(self):
         """Get statistics about uploaded emails"""

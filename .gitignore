@@ -8,6 +8,7 @@ working_n8n_files/
 # Email data directories
 data/mail_exports/
 data/processed/
+data/Whatsapp_txt/ 
 
 # Python cache
 __pycache__/

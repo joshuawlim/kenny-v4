@@ -14,20 +14,24 @@ import logging
 class DirectDBUploader:
     def __init__(self):
         # Try multiple connection methods for local PostgreSQL
+        db_password = os.getenv('POSTGRES_PASSWORD')
+        if not db_password:
+            raise ValueError("POSTGRES_PASSWORD environment variable must be set")
+            
         self.connection_attempts = [
             {
                 'host': 'localhost',
                 'port': 54322,  # Default Supabase PostgreSQL port
                 'database': 'postgres',
                 'user': 'postgres',
-                'password': 'ed45705e7bca7b4540dd6c1e8ed76677dbadbedaccbbd97b0771fddb6749e17b'
+                'password': db_password
             },
             {
                 'host': 'localhost',
                 'port': 5432,  # Standard PostgreSQL port
                 'database': 'postgres',
                 'user': 'postgres',
-                'password': 'ed45705e7bca7b4540dd6c1e8ed76677dbadbedaccbbd97b0771fddb6749e17b'
+                'password': db_password
             }
         ]
         self.db_config = None
