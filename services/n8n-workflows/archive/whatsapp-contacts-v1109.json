@@ -1,0 +1,52 @@
+{
+  "name": "WhatsApp Search Contacts",
+  "version": 1,
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "whatsapp-contacts"
+      },
+      "name": "Webhook",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [240, 300],
+      "id": "webhook-contacts"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "http://localhost:3004/search-contacts",
+        "sendHeaders": true,
+        "headerParameters": {
+          "Content-Type": "application/json"
+        },
+        "sendBody": true,
+        "bodyParameters": {
+          "query": "={{ $json.query }}"
+        }
+      },
+      "name": "Search WhatsApp Contacts",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4,
+      "position": [460, 300],
+      "id": "contacts-request"
+    }
+  ],
+  "connections": {
+    "Webhook": {
+      "main": [
+        [
+          {
+            "node": "Search WhatsApp Contacts",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {},
+  "id": "whatsapp-search-contacts"
+}

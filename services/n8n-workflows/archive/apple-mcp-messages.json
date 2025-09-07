@@ -1,0 +1,127 @@
+{
+  "meta": {
+    "instanceId": "kenny-apple-mcp-messages"
+  },
+  "nodes": [
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "http://localhost:3001/mcp/tools/call",
+        "sendHeaders": true,
+        "headerParameters": {
+          "Content-Type": "application/json"
+        },
+        "sendBody": true,
+        "bodyParameters": {
+          "tool": "={{ $json.action }}",
+          "arguments": "={{ $json.arguments }}"
+        }
+      },
+      "id": "apple-mcp-messages-action",
+      "name": "Messages Action",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.1,
+      "position": [400, 300]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict"
+          },
+          "conditions": [
+            {
+              "leftValue": "={{ $json.action }}",
+              "rightValue": "messages_send",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        }
+      },
+      "id": "is-send-message",
+      "name": "Is Send Message?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [600, 300]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Handle send message response\nconst result = $input.all()[0].json;\nif (result.success) {\n  return [{ json: { \n    success: true, \n    message: 'Message sent successfully',\n    recipient: result.result?.recipient || 'unknown',\n    message_text: result.result?.message || ''\n  }}];\n} else {\n  return [{ json: { \n    success: false, \n    error: result.error || 'Failed to send message'\n  }}];\n}"
+      },
+      "id": "format-send-response",
+      "name": "Format Send Response",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [800, 200]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Handle read messages response\nconst result = $input.all()[0].json;\nif (result.success && result.result) {\n  const messages = result.result.messages || [];\n  return messages.map(msg => ({\n    json: {\n      sender: msg.sender || 'unknown',\n      message: msg.message || '',\n      timestamp: msg.timestamp || '',\n      is_unread: msg.is_unread || false,\n      conversation: msg.conversation || ''\n    }\n  }));\n} else {\n  return [{ json: { \n    success: false, \n    error: result.error || 'Failed to read messages'\n  }}];\n}"
+      },
+      "id": "format-read-response",
+      "name": "Format Read Response",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [800, 400]
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "id": "webhook-trigger",
+      "name": "Webhook Trigger",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [200, 300],
+      "webhookId": "apple-messages-action"
+    }
+  ],
+  "connections": {
+    "webhook-trigger": {
+      "main": [
+        [
+          {
+            "node": "Messages Action",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Messages Action": {
+      "main": [
+        [
+          {
+            "node": "Is Send Message?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Is Send Message?": {
+      "main": [
+        [
+          {
+            "node": "Format Send Response",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Format Read Response",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  }
+}

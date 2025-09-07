@@ -1,0 +1,231 @@
+{
+  "name": "Apple MCP Master Router Fixed",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "apple-mcp-router-fixed",
+        "options": {}
+      },
+      "id": "webhook-apple-router",
+      "name": "Webhook",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 1,
+      "position": [240, 300]
+    },
+    {
+      "parameters": {
+        "dataType": "string",
+        "value1": "={{ $json.intent }}",
+        "rules": {
+          "rules": [
+            {
+              "value2": "contacts",
+              "output": 0
+            },
+            {
+              "value2": "messages", 
+              "output": 1
+            },
+            {
+              "value2": "mail",
+              "output": 2
+            },
+            {
+              "value2": "calendar",
+              "output": 3
+            }
+          ]
+        }
+      },
+      "id": "switch-apple-intent",
+      "name": "Route by Intent",
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 1,
+      "position": [460, 300]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "http://localhost:5678/webhook/apple-contacts-fixed",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "query",
+              "value": "={{ $json.query }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "http-contacts-workflow",
+      "name": "Call Contacts Workflow",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [680, 200]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "http://localhost:5678/webhook/apple-messages-fixed",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "action",
+              "value": "={{ $json.action }}"
+            },
+            {
+              "name": "arguments",
+              "value": "={{ JSON.stringify($json.arguments || {}) }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "http-messages-workflow",
+      "name": "Call Messages Workflow",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [680, 300]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "http://localhost:5678/webhook/apple-mail-fixed",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "action",
+              "value": "={{ $json.action }}"
+            },
+            {
+              "name": "arguments",
+              "value": "={{ JSON.stringify($json.arguments || {}) }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "http-mail-workflow",
+      "name": "Call Mail Workflow",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [680, 400]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "http://localhost:5678/webhook/apple-calendar-fixed",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "action",
+              "value": "={{ $json.action }}"
+            },
+            {
+              "name": "arguments",
+              "value": "={{ JSON.stringify($json.arguments || {}) }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "http-calendar-workflow",
+      "name": "Call Calendar Workflow",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [680, 500]
+    }
+  ],
+  "connections": {
+    "Webhook": {
+      "main": [
+        [
+          {
+            "node": "Route by Intent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Route by Intent": {
+      "main": [
+        [
+          {
+            "node": "Call Contacts Workflow",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Call Messages Workflow",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Call Mail Workflow",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Call Calendar Workflow",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "id": "apple-mcp-router-fixed",
+  "tags": []
+}

@@ -1,0 +1,41 @@
+# Prevent duplicate Docker builds and services
+**/Dockerfile*
+**/docker-compose*.yml
+**/.dockerignore
+
+# Exclude existing infrastructure
+local-ai-packaged/
+supabase/docker/
+
+# Prevent service duplication - use existing services only
+# OpenWebUI runs on port 8080 (via local-ai-packaged)
+# n8n runs on port 5678 (via local-ai-packaged) 
+# Supabase runs on port 8005 (via local-ai-packaged)
+# Never create new instances of these services
+
+# Documentation and guides
+*.md
+docs/
+
+# Logs and temporary files
+*.log
+.DS_Store
+node_modules/
+__pycache__/
+.pytest_cache/
+
+# IDE and editor files
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Environment files
+.env*
+!.env.example
+
+# Build artifacts
+dist/
+build/
+*.pyc
+*.pyo

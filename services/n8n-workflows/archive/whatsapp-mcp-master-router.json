@@ -1,0 +1,275 @@
+{
+  "meta": {
+    "instanceId": "kenny-whatsapp-master-router"
+  },
+  "nodes": [
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict"
+          },
+          "conditions": [
+            {
+              "leftValue": "={{ $json.action }}",
+              "rightValue": "search_messages",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        }
+      },
+      "id": "route-whatsapp-action",
+      "name": "Route WhatsApp Action",
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 3,
+      "position": [400, 300],
+      "parameters": {
+        "options": {
+          "allMatchingOutputs": false
+        },
+        "rules": {
+          "rules": [
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict"
+                },
+                "conditions": [
+                  {
+                    "leftValue": "={{ $json.action }}",
+                    "rightValue": "search_messages",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "search_messages"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict"
+                },
+                "conditions": [
+                  {
+                    "leftValue": "={{ $json.action }}",
+                    "rightValue": "send_message",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "send_message"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict"
+                },
+                "conditions": [
+                  {
+                    "leftValue": "={{ $json.action }}",
+                    "rightValue": "list_chats",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "list_chats"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict"
+                },
+                "conditions": [
+                  {
+                    "leftValue": "={{ $json.action }}",
+                    "rightValue": "search_contacts",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "search_contacts"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "http://localhost:5678/webhook/whatsapp-search-messages",
+        "sendHeaders": true,
+        "headerParameters": {
+          "Content-Type": "application/json"
+        },
+        "sendBody": true,
+        "bodyParameters": {
+          "query": "={{ $json.query }}",
+          "limit": "={{ $json.limit || 20 }}",
+          "page": "={{ $json.page || 0 }}",
+          "after": "={{ $json.after }}",
+          "before": "={{ $json.before }}",
+          "sender_phone_number": "={{ $json.sender_phone_number }}",
+          "chat_jid": "={{ $json.chat_jid }}",
+          "include_context": "={{ $json.include_context || true }}"
+        }
+      },
+      "id": "call-search-messages",
+      "name": "Search Messages Workflow",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.1,
+      "position": [600, 100]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "http://localhost:5678/webhook/whatsapp-send-message",
+        "sendHeaders": true,
+        "headerParameters": {
+          "Content-Type": "application/json"
+        },
+        "sendBody": true,
+        "bodyParameters": {
+          "recipient": "={{ $json.recipient }}",
+          "message": "={{ $json.message }}"
+        }
+      },
+      "id": "call-send-message",
+      "name": "Send Message Workflow",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.1,
+      "position": [600, 200]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "http://localhost:5678/webhook/whatsapp-list-chats",
+        "sendHeaders": true,
+        "headerParameters": {
+          "Content-Type": "application/json"
+        },
+        "sendBody": true,
+        "bodyParameters": {
+          "query": "={{ $json.query }}",
+          "limit": "={{ $json.limit || 20 }}",
+          "page": "={{ $json.page || 0 }}",
+          "include_last_message": "={{ $json.include_last_message || true }}",
+          "sort_by": "={{ $json.sort_by || 'last_active' }}"
+        }
+      },
+      "id": "call-list-chats",
+      "name": "List Chats Workflow",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.1,
+      "position": [600, 300]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "http://localhost:5678/webhook/whatsapp-search-contacts",
+        "sendHeaders": true,
+        "headerParameters": {
+          "Content-Type": "application/json"
+        },
+        "sendBody": true,
+        "bodyParameters": {
+          "query": "={{ $json.query }}"
+        }
+      },
+      "id": "call-search-contacts",
+      "name": "Search Contacts Workflow",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.1,
+      "position": [600, 400]
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "id": "webhook-trigger",
+      "name": "WhatsApp MCP Router",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [200, 300],
+      "webhookId": "whatsapp-mcp-router"
+    }
+  ],
+  "connections": {
+    "webhook-trigger": {
+      "main": [
+        [
+          {
+            "node": "Route WhatsApp Action",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Route WhatsApp Action": {
+      "main": [
+        [
+          {
+            "node": "Search Messages Workflow",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Send Message Workflow",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "List Chats Workflow",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Search Contacts Workflow",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  }
+}

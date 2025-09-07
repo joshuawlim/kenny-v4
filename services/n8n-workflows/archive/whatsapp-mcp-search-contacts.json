@@ -1,0 +1,126 @@
+{
+  "meta": {
+    "instanceId": "kenny-whatsapp-search-contacts"
+  },
+  "nodes": [
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "http://localhost:3004/search-contacts",
+        "sendHeaders": true,
+        "headerParameters": {
+          "Content-Type": "application/json"
+        },
+        "sendBody": true,
+        "bodyParameters": {
+          "query": "={{ $json.query }}"
+        }
+      },
+      "id": "whatsapp-search-contacts",
+      "name": "Search WhatsApp Contacts",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.1,
+      "position": [400, 300]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict"
+          },
+          "conditions": [
+            {
+              "leftValue": "={{ $json.success }}",
+              "rightValue": true,
+              "operator": {
+                "type": "boolean",
+                "operation": "equal"
+              }
+            }
+          ],
+          "combinator": "and"
+        }
+      },
+      "id": "success-check",
+      "name": "Success Check",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [600, 300]
+    },
+    {
+      "parameters": {
+        "jsCode": "const result = $input.all()[0].json;\nif (result.success && result.data) {\n  const contacts = Array.isArray(result.data) ? result.data : (result.data.contacts || []);\n  return contacts.map(contact => ({\n    json: {\n      jid: contact.jid || contact.id,\n      name: contact.name || contact.display_name || 'Unknown',\n      phone_number: contact.phone_number || contact.phone || '',\n      is_business: contact.is_business || false,\n      is_enterprise: contact.is_enterprise || false,\n      status: contact.status || '',\n      profile_picture_url: contact.profile_picture_url || null,\n      last_seen: contact.last_seen || null,\n      is_contact: contact.is_contact || true,\n      is_me: contact.is_me || false\n    }\n  }));\n} else {\n  return [{ json: { \n    success: false, \n    error: result.error || 'No contacts found'\n  }}];\n}"
+      },
+      "id": "format-contacts",
+      "name": "Format Contacts",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [800, 200]
+    },
+    {
+      "parameters": {
+        "jsCode": "const error = $input.all()[0].json.error || 'Failed to search contacts';\nreturn [{ json: { error: error, success: false } }];"
+      },
+      "id": "handle-error",
+      "name": "Handle Error",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [800, 400]
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "id": "webhook-trigger",
+      "name": "WhatsApp Contact Search",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [200, 300],
+      "webhookId": "whatsapp-search-contacts"
+    }
+  ],
+  "connections": {
+    "webhook-trigger": {
+      "main": [
+        [
+          {
+            "node": "Search WhatsApp Contacts",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Search WhatsApp Contacts": {
+      "main": [
+        [
+          {
+            "node": "Success Check",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Success Check": {
+      "main": [
+        [
+          {
+            "node": "Format Contacts",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Handle Error",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  }
+}

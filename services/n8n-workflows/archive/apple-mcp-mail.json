@@ -1,0 +1,127 @@
+{
+  "meta": {
+    "instanceId": "kenny-apple-mcp-mail"
+  },
+  "nodes": [
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "http://localhost:3001/mcp/tools/call",
+        "sendHeaders": true,
+        "headerParameters": {
+          "Content-Type": "application/json"
+        },
+        "sendBody": true,
+        "bodyParameters": {
+          "tool": "={{ $json.action }}",
+          "arguments": "={{ $json.arguments }}"
+        }
+      },
+      "id": "apple-mcp-mail-action",
+      "name": "Mail Action",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.1,
+      "position": [400, 300]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict"
+          },
+          "conditions": [
+            {
+              "leftValue": "={{ $json.action }}",
+              "rightValue": "mail_send",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        }
+      },
+      "id": "is-send-mail",
+      "name": "Is Send Mail?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [600, 300]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Handle send email response\nconst result = $input.all()[0].json;\nif (result.success) {\n  return [{ json: { \n    success: true, \n    message: 'Email sent successfully',\n    to: result.result?.to || 'unknown',\n    subject: result.result?.subject || '',\n    body_preview: (result.result?.body || '').substring(0, 100) + '...'\n  }}];\n} else {\n  return [{ json: { \n    success: false, \n    error: result.error || 'Failed to send email'\n  }}];\n}"
+      },
+      "id": "format-send-response",
+      "name": "Format Send Response",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [800, 200]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Handle read emails response\nconst result = $input.all()[0].json;\nif (result.success && result.result) {\n  const emails = result.result.emails || [];\n  return emails.map(email => ({\n    json: {\n      from: email.from || 'unknown',\n      to: email.to || '',\n      subject: email.subject || '',\n      body_preview: (email.body || '').substring(0, 200) + '...',\n      timestamp: email.timestamp || '',\n      is_unread: email.is_unread || false,\n      has_attachments: email.has_attachments || false,\n      mailbox: email.mailbox || 'Inbox'\n    }\n  }));\n} else {\n  return [{ json: { \n    success: false, \n    error: result.error || 'Failed to read emails'\n  }}];\n}"
+      },
+      "id": "format-read-response",
+      "name": "Format Read Response",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [800, 400]
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "id": "webhook-trigger",
+      "name": "Webhook Trigger",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [200, 300],
+      "webhookId": "apple-mail-action"
+    }
+  ],
+  "connections": {
+    "webhook-trigger": {
+      "main": [
+        [
+          {
+            "node": "Mail Action",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Mail Action": {
+      "main": [
+        [
+          {
+            "node": "Is Send Mail?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Is Send Mail?": {
+      "main": [
+        [
+          {
+            "node": "Format Send Response",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Format Read Response",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  }
+}

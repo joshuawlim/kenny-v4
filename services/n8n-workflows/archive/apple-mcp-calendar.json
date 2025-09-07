@@ -1,0 +1,127 @@
+{
+  "meta": {
+    "instanceId": "kenny-apple-mcp-calendar"
+  },
+  "nodes": [
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "http://localhost:3001/mcp/tools/call",
+        "sendHeaders": true,
+        "headerParameters": {
+          "Content-Type": "application/json"
+        },
+        "sendBody": true,
+        "bodyParameters": {
+          "tool": "={{ $json.action }}",
+          "arguments": "={{ $json.arguments }}"
+        }
+      },
+      "id": "apple-mcp-calendar-action",
+      "name": "Calendar Action",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.1,
+      "position": [400, 300]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict"
+          },
+          "conditions": [
+            {
+              "leftValue": "={{ $json.action }}",
+              "rightValue": "calendar_create_event",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        }
+      },
+      "id": "is-create-event",
+      "name": "Is Create Event?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [600, 300]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Handle create event response\nconst result = $input.all()[0].json;\nif (result.success) {\n  return [{ json: { \n    success: true, \n    message: 'Event created successfully',\n    title: result.result?.title || 'unknown',\n    start_date: result.result?.start_date || '',\n    end_date: result.result?.end_date || '',\n    location: result.result?.location || '',\n    notes: result.result?.notes || ''\n  }}];\n} else {\n  return [{ json: { \n    success: false, \n    error: result.error || 'Failed to create event'\n  }}];\n}"
+      },
+      "id": "format-create-response",
+      "name": "Format Create Response",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [800, 200]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Handle search events response\nconst result = $input.all()[0].json;\nif (result.success && result.result) {\n  const events = result.result.events || [];\n  return events.map(event => ({\n    json: {\n      title: event.title || 'No title',\n      start_date: event.start_date || '',\n      end_date: event.end_date || '',\n      location: event.location || '',\n      notes: event.notes || '',\n      attendees: event.attendees || [],\n      calendar_name: event.calendar || '',\n      all_day: event.all_day || false,\n      status: event.status || ''\n    }\n  }));\n} else {\n  return [{ json: { \n    success: false, \n    error: result.error || 'Failed to search events'\n  }}];\n}"
+      },
+      "id": "format-search-response",
+      "name": "Format Search Response",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [800, 400]
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "id": "webhook-trigger",
+      "name": "Webhook Trigger",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [200, 300],
+      "webhookId": "apple-calendar-action"
+    }
+  ],
+  "connections": {
+    "webhook-trigger": {
+      "main": [
+        [
+          {
+            "node": "Calendar Action",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Calendar Action": {
+      "main": [
+        [
+          {
+            "node": "Is Create Event?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Is Create Event?": {
+      "main": [
+        [
+          {
+            "node": "Format Create Response",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Format Search Response",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  }
+}

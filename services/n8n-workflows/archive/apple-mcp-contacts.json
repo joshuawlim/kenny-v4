@@ -1,0 +1,127 @@
+{
+  "meta": {
+    "instanceId": "kenny-apple-mcp-contacts"
+  },
+  "nodes": [
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "http://localhost:3001/mcp/tools/call",
+        "sendHeaders": true,
+        "headerParameters": {
+          "Content-Type": "application/json"
+        },
+        "sendBody": true,
+        "bodyParameters": {
+          "tool": "contacts_search",
+          "arguments": "={{ $json.query ? { query: $json.query } : {} }}"
+        }
+      },
+      "id": "apple-mcp-contacts-search",
+      "name": "Search Apple Contacts",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.1,
+      "position": [400, 300]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict"
+          },
+          "conditions": [
+            {
+              "leftValue": "={{ $json.success }}",
+              "rightValue": true,
+              "operator": {
+                "type": "boolean",
+                "operation": "equal"
+              }
+            }
+          ],
+          "combinator": "and"
+        }
+      },
+      "id": "contacts-success-check",
+      "name": "Success Check",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [600, 300]
+    },
+    {
+      "parameters": {
+        "jsCode": "const contacts = $input.all()[0].json.result || [];\nconst formatted = contacts.map(contact => {\n  return {\n    name: contact.name || 'Unknown',\n    email: contact.email || '',\n    phone: contact.phone || '',\n    company: contact.company || '',\n    notes: contact.notes || '',\n    full_data: contact\n  };\n});\n\nreturn formatted.map(contact => ({ json: contact }));"
+      },
+      "id": "format-contacts",
+      "name": "Format Contact Data",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [800, 200]
+    },
+    {
+      "parameters": {
+        "jsCode": "const error = $input.all()[0].json.error || 'Unknown error';\nreturn [{ json: { error: error, success: false } }];"
+      },
+      "id": "handle-error",
+      "name": "Handle Error",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [800, 400]
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "id": "webhook-trigger",
+      "name": "Webhook Trigger",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [200, 300],
+      "webhookId": "apple-contacts-search"
+    }
+  ],
+  "connections": {
+    "webhook-trigger": {
+      "main": [
+        [
+          {
+            "node": "Search Apple Contacts",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Search Apple Contacts": {
+      "main": [
+        [
+          {
+            "node": "Success Check",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Success Check": {
+      "main": [
+        [
+          {
+            "node": "Format Contact Data",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Handle Error",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  }
+}

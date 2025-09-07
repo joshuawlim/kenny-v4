@@ -15,7 +15,7 @@ app.use(cors());
 const PORT = process.env.PORT || 3004;
 
 // Path to WhatsApp MCP server
-const WHATSAPP_MCP_PATH = path.join(__dirname, '..', 'whatsapp-mcp', 'whatsapp-mcp-server');
+const WHATSAPP_MCP_PATH = path.join(__dirname, '..', '..', 'whatsapp-mcp', 'whatsapp-mcp-server');
 const UV_PATH = '/Library/Frameworks/Python.framework/Versions/3.13/bin/uv';
 
 // Helper function to call MCP tools

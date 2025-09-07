@@ -1,0 +1,224 @@
+{
+  "kenny_v4": {
+    "version": "1.0.0",
+    "updated": "2025-09-07",
+    "environment": "development"
+  },
+  "services": {
+    "docker_managed": {
+      "open-webui": {
+        "name": "Open-WebUI",
+        "image": "ghcr.io/open-webui/open-webui:main",
+        "port": 3000,
+        "health_check": "http://localhost:3000",
+        "status": "active",
+        "dependencies": []
+      },
+      "n8n": {
+        "name": "n8n Workflow Automation",
+        "image": "n8nio/n8n",
+        "port": 5678,
+        "health_check": "http://localhost:5678/healthz",
+        "status": "active",
+        "dependencies": ["supabase-db"]
+      },
+      "langfuse-web": {
+        "name": "Langfuse Web Interface",
+        "image": "langfuse/langfuse:3",
+        "port": 3002,
+        "health_check": "http://localhost:3002/api/public/health",
+        "status": "active",
+        "dependencies": ["langfuse-worker", "localai-postgres"]
+      },
+      "langfuse-worker": {
+        "name": "Langfuse Background Worker",
+        "image": "langfuse/langfuse-worker:3",
+        "port": 3030,
+        "health_check": "tcp://localhost:3030",
+        "status": "active",
+        "dependencies": ["localai-postgres"]
+      },
+      "flowise": {
+        "name": "Flowise Low-Code AI",
+        "image": "flowiseai/flowise",
+        "port": 3001,
+        "health_check": "http://localhost:3001",
+        "status": "active",
+        "dependencies": []
+      },
+      "supabase-stack": {
+        "name": "Supabase Backend",
+        "ports": [4000, 5432, 6543, 8000, 8443],
+        "health_check": "http://localhost:8000/health",
+        "status": "active",
+        "dependencies": []
+      },
+      "searxng": {
+        "name": "SearXNG Meta Search",
+        "image": "searxng/searxng:latest",
+        "port": 8081,
+        "health_check": "http://localhost:8081",
+        "status": "active",
+        "dependencies": []
+      },
+      "clickhouse": {
+        "name": "ClickHouse Database",
+        "image": "clickhouse/clickhouse-server",
+        "ports": [8123, 9000, 9009],
+        "health_check": "http://localhost:8123/ping",
+        "status": "active",
+        "dependencies": []
+      },
+      "qdrant": {
+        "name": "Qdrant Vector Database",
+        "image": "qdrant/qdrant",
+        "ports": [6333, 6334],
+        "health_check": "http://localhost:6333/health",
+        "status": "active",
+        "dependencies": []
+      },
+      "minio": {
+        "name": "MinIO Object Storage",
+        "image": "minio/minio",
+        "ports": [9010, 9011],
+        "health_check": "http://localhost:9010/minio/health/live",
+        "status": "active",
+        "dependencies": []
+      },
+      "neo4j": {
+        "name": "Neo4j Graph Database",
+        "image": "neo4j:latest",
+        "ports": [7473, 7474, 7687],
+        "health_check": "http://localhost:7474/db/manage/server/jmx",
+        "status": "active",
+        "dependencies": []
+      },
+      "caddy": {
+        "name": "Caddy Reverse Proxy",
+        "image": "caddy:2-alpine",
+        "ports": [80, 443],
+        "health_check": "http://localhost:80",
+        "status": "active",
+        "dependencies": []
+      }
+    },
+    "manual_services": {
+      "whatsapp-mcp-bridge": {
+        "name": "WhatsApp MCP Bridge",
+        "port": 3004,
+        "health_check": "http://localhost:3004/health",
+        "status": "active",
+        "path": "./services/whatsapp-mcp-bridge",
+        "start_command": "npm start",
+        "dependencies": ["whatsapp-go-bridge"]
+      },
+      "whatsapp-go-bridge": {
+        "name": "WhatsApp Go Bridge",
+        "port": 8080,
+        "health_check": "tcp://localhost:8080",
+        "status": "active",
+        "path": "./whatsapp-mcp/whatsapp-bridge",
+        "start_command": "go run main.go",
+        "dependencies": []
+      },
+      "cloudflare-tunnel": {
+        "name": "Cloudflare Tunnel",
+        "external_url": "ai.youroldmatekenny.com",
+        "health_check": "https://ai.youroldmatekenny.com",
+        "status": "active",
+        "start_command": "cloudflared tunnel run",
+        "config_path": "~/.cloudflared/config.yml",
+        "dependencies": ["open-webui"]
+      },
+      "apple-mcp-bridge": {
+        "name": "Apple MCP Bridge",
+        "port": 3003,
+        "health_check": "http://localhost:3003/health",
+        "status": "planned",
+        "path": "./services/apple-mcp-bridge",
+        "start_command": "TBD",
+        "dependencies": [],
+        "platform_required": "macOS"
+      }
+    },
+    "external_dependencies": {
+      "ollama": {
+        "name": "Ollama Local LLM",
+        "port": 11434,
+        "health_check": "http://localhost:11434/api/tags",
+        "status": "available",
+        "start_command": "ollama serve"
+      },
+      "apple-mail": {
+        "name": "Apple Mail",
+        "status": "system",
+        "platform_required": "macOS"
+      },
+      "apple-calendar": {
+        "name": "Apple Calendar",
+        "status": "system", 
+        "platform_required": "macOS"
+      },
+      "apple-messages": {
+        "name": "Apple Messages",
+        "status": "system",
+        "platform_required": "macOS"
+      }
+    }
+  },
+  "ports": {
+    "reserved": [
+      3000, 3001, 3002, 3004, 3030,
+      4000, 5432, 5433, 5678, 
+      6333, 6334, 6543,
+      7473, 7474, 7687,
+      8000, 8080, 8081, 8123, 8443,
+      9000, 9009, 9010, 9011
+    ],
+    "available": [
+      3003, 3005, 3006, 3007, 3008, 3009,
+      3010, 3011, 3012, 3013, 3014, 3015,
+      3031, 3032, 3033, 3034, 3035,
+      7000, 7001, 7002, 7100, 7200,
+      8001, 8002, 8003, 8082, 8090,
+      9001, 9002, 9003, 9012, 9013
+    ]
+  },
+  "volumes": {
+    "active": [
+      "open-webui",
+      "n8n_data",
+      "n8n_storage", 
+      "supabase_db-config",
+      "localai_langfuse_postgres_data",
+      "localai_langfuse_clickhouse_data",
+      "localai_langfuse_minio_data",
+      "localai_qdrant_storage",
+      "localai_n8n_storage",
+      "ollama"
+    ]
+  },
+  "urls": {
+    "public": {
+      "open_webui": "https://ai.youroldmatekenny.com"
+    },
+    "local": {
+      "open_webui": "http://localhost:3000",
+      "n8n": "http://localhost:5678", 
+      "langfuse": "http://localhost:3002",
+      "flowise": "http://localhost:3001",
+      "whatsapp_bridge": "http://localhost:3004",
+      "supabase_studio": "http://localhost:8000"
+    }
+  },
+  "management": {
+    "start_order": [
+      "docker_services",
+      "whatsapp-go-bridge", 
+      "whatsapp-mcp-bridge",
+      "cloudflare-tunnel"
+    ],
+    "health_check_interval": 30,
+    "restart_policy": "on-failure"
+  }
+}

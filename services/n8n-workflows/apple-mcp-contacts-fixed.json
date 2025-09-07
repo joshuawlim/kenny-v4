@@ -1,0 +1,70 @@
+{
+  "name": "Apple MCP Contacts Fixed",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "apple-contacts-fixed",
+        "options": {}
+      },
+      "id": "webhook-apple-contacts",
+      "name": "Webhook",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 1,
+      "position": [240, 300]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "http://localhost:3001/mcp/tools/call",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "tool",
+              "value": "contacts_search"
+            },
+            {
+              "name": "arguments",
+              "value": "={{ JSON.stringify({ query: $json.query }) }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "http-apple-contacts",
+      "name": "Search Apple Contacts",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [460, 300]
+    }
+  ],
+  "connections": {
+    "Webhook": {
+      "main": [
+        [
+          {
+            "node": "Search Apple Contacts",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "id": "apple-contacts-fixed",
+  "tags": []
+}

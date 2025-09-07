@@ -1,0 +1,61 @@
+{
+  "name": "WhatsApp Message Search",
+  "version": 1,
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "whatsapp-search"
+      },
+      "name": "Webhook",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [
+        240,
+        300
+      ],
+      "id": "webhook-node"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "http://localhost:3004/list-messages",
+        "sendHeaders": true,
+        "headerParameters": {
+          "Content-Type": "application/json"
+        },
+        "sendBody": true,
+        "bodyParameters": {
+          "query": "={{ $json.query }}",
+          "limit": "={{ $json.limit || 10 }}",
+          "sender_phone_number": "={{ $json.sender_phone }}",
+          "chat_jid": "={{ $json.chat_jid }}"
+        }
+      },
+      "name": "Search WhatsApp Messages",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4,
+      "position": [
+        460,
+        300
+      ],
+      "id": "http-request-node"
+    }
+  ],
+  "connections": {
+    "Webhook": {
+      "main": [
+        [
+          {
+            "node": "Search WhatsApp Messages",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {},
+  "id": "whatsapp-search-simple"
+}

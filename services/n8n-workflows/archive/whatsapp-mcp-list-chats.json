@@ -1,0 +1,130 @@
+{
+  "meta": {
+    "instanceId": "kenny-whatsapp-list-chats"
+  },
+  "nodes": [
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "http://localhost:3004/list-chats",
+        "sendHeaders": true,
+        "headerParameters": {
+          "Content-Type": "application/json"
+        },
+        "sendBody": true,
+        "bodyParameters": {
+          "query": "={{ $json.query }}",
+          "limit": "={{ $json.limit || 20 }}",
+          "page": "={{ $json.page || 0 }}",
+          "include_last_message": "={{ $json.include_last_message || true }}",
+          "sort_by": "={{ $json.sort_by || 'last_active' }}"
+        }
+      },
+      "id": "whatsapp-list-chats",
+      "name": "List WhatsApp Chats",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.1,
+      "position": [400, 300]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict"
+          },
+          "conditions": [
+            {
+              "leftValue": "={{ $json.success }}",
+              "rightValue": true,
+              "operator": {
+                "type": "boolean",
+                "operation": "equal"
+              }
+            }
+          ],
+          "combinator": "and"
+        }
+      },
+      "id": "success-check",
+      "name": "Success Check",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [600, 300]
+    },
+    {
+      "parameters": {
+        "jsCode": "const result = $input.all()[0].json;\nif (result.success && result.data) {\n  const chats = result.data.chats || [];\n  return chats.map(chat => ({\n    json: {\n      jid: chat.jid,\n      name: chat.name || 'Unknown Chat',\n      is_group: chat.is_group || false,\n      participant_count: chat.participant_count || 0,\n      last_message_time: chat.last_message_time || '',\n      last_message: {\n        content: chat.last_message?.content || '',\n        sender: chat.last_message?.sender || '',\n        timestamp: chat.last_message?.timestamp || '',\n        is_from_me: chat.last_message?.is_from_me || false\n      },\n      unread_count: chat.unread_count || 0,\n      archived: chat.archived || false,\n      pinned: chat.pinned || false\n    }\n  }));\n} else {\n  return [{ json: { \n    success: false, \n    error: result.error || 'No chats found'\n  }}];\n}"
+      },
+      "id": "format-chats",
+      "name": "Format Chats",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [800, 200]
+    },
+    {
+      "parameters": {
+        "jsCode": "const error = $input.all()[0].json.error || 'Failed to list chats';\nreturn [{ json: { error: error, success: false } }];"
+      },
+      "id": "handle-error",
+      "name": "Handle Error",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [800, 400]
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "id": "webhook-trigger",
+      "name": "WhatsApp List Chats",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [200, 300],
+      "webhookId": "whatsapp-list-chats"
+    }
+  ],
+  "connections": {
+    "webhook-trigger": {
+      "main": [
+        [
+          {
+            "node": "List WhatsApp Chats",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "List WhatsApp Chats": {
+      "main": [
+        [
+          {
+            "node": "Success Check",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Success Check": {
+      "main": [
+        [
+          {
+            "node": "Format Chats",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Handle Error",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  }
+}

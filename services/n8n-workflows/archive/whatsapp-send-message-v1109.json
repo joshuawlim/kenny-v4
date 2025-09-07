@@ -1,0 +1,53 @@
+{
+  "name": "WhatsApp Send Message",
+  "version": 1,
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "whatsapp-send"
+      },
+      "name": "Webhook",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [240, 300],
+      "id": "webhook-send"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "http://localhost:3004/send-message",
+        "sendHeaders": true,
+        "headerParameters": {
+          "Content-Type": "application/json"
+        },
+        "sendBody": true,
+        "bodyParameters": {
+          "recipient": "={{ $json.recipient }}",
+          "message": "={{ $json.message }}"
+        }
+      },
+      "name": "Send WhatsApp Message",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4,
+      "position": [460, 300],
+      "id": "send-request"
+    }
+  ],
+  "connections": {
+    "Webhook": {
+      "main": [
+        [
+          {
+            "node": "Send WhatsApp Message",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {},
+  "id": "whatsapp-send-message"
+}

@@ -1,0 +1,70 @@
+{
+  "name": "Apple MCP Messages Fixed",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "apple-messages-fixed",
+        "options": {}
+      },
+      "id": "webhook-apple-messages",
+      "name": "Webhook",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 1,
+      "position": [240, 300]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "http://localhost:3001/mcp/tools/call",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "tool",
+              "value": "={{ $json.action }}"
+            },
+            {
+              "name": "arguments",
+              "value": "={{ JSON.stringify($json.arguments || {}) }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "http-apple-messages",
+      "name": "Apple Messages Action",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [460, 300]
+    }
+  ],
+  "connections": {
+    "Webhook": {
+      "main": [
+        [
+          {
+            "node": "Apple Messages Action",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "id": "apple-messages-fixed",
+  "tags": []
+}

@@ -1,0 +1,127 @@
+{
+  "meta": {
+    "instanceId": "kenny-whatsapp-send-message"
+  },
+  "nodes": [
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "http://localhost:3004/send-message",
+        "sendHeaders": true,
+        "headerParameters": {
+          "Content-Type": "application/json"
+        },
+        "sendBody": true,
+        "bodyParameters": {
+          "recipient": "={{ $json.recipient }}",
+          "message": "={{ $json.message }}"
+        }
+      },
+      "id": "whatsapp-send-message",
+      "name": "Send WhatsApp Message",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.1,
+      "position": [400, 300]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict"
+          },
+          "conditions": [
+            {
+              "leftValue": "={{ $json.success }}",
+              "rightValue": true,
+              "operator": {
+                "type": "boolean",
+                "operation": "equal"
+              }
+            }
+          ],
+          "combinator": "and"
+        }
+      },
+      "id": "success-check",
+      "name": "Success Check",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [600, 300]
+    },
+    {
+      "parameters": {
+        "jsCode": "const result = $input.all()[0].json;\nif (result.success) {\n  return [{ json: { \n    success: true, \n    message: 'Message sent successfully',\n    recipient: result.data?.recipient || 'unknown',\n    message_text: result.data?.message || '',\n    message_id: result.data?.message_id || null,\n    timestamp: result.data?.timestamp || new Date().toISOString()\n  }}];\n} else {\n  return [{ json: { \n    success: false, \n    error: result.error || 'Failed to send message'\n  }}];\n}"
+      },
+      "id": "format-success-response",
+      "name": "Format Success Response",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [800, 200]
+    },
+    {
+      "parameters": {
+        "jsCode": "const result = $input.all()[0].json;\nreturn [{ json: { \n  success: false, \n  error: result.error || 'Failed to send WhatsApp message',\n  details: result.data || {}\n}}];"
+      },
+      "id": "handle-error",
+      "name": "Handle Error",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [800, 400]
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "id": "webhook-trigger",
+      "name": "WhatsApp Send Message",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [200, 300],
+      "webhookId": "whatsapp-send-message"
+    }
+  ],
+  "connections": {
+    "webhook-trigger": {
+      "main": [
+        [
+          {
+            "node": "Send WhatsApp Message",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Send WhatsApp Message": {
+      "main": [
+        [
+          {
+            "node": "Success Check",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Success Check": {
+      "main": [
+        [
+          {
+            "node": "Format Success Response",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Handle Error",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  }
+}

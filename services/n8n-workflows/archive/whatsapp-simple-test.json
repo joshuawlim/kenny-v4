@@ -1,0 +1,58 @@
+{
+  "name": "WhatsApp Test",
+  "version": 1,
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "whatsapp-test"
+      },
+      "name": "Webhook",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [
+        240,
+        300
+      ],
+      "id": "webhook-node"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "http://localhost:3004/list-chats",
+        "sendHeaders": true,
+        "headerParameters": {
+          "Content-Type": "application/json"
+        },
+        "sendBody": true,
+        "bodyParameters": {
+          "limit": 5
+        }
+      },
+      "name": "Get WhatsApp Chats",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4,
+      "position": [
+        460,
+        300
+      ],
+      "id": "http-request-node"
+    }
+  ],
+  "connections": {
+    "Webhook": {
+      "main": [
+        [
+          {
+            "node": "Get WhatsApp Chats",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {},
+  "id": "whatsapp-simple-test"
+}
