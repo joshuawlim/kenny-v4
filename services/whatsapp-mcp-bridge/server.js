@@ -46,7 +46,22 @@ def serialize_result(obj):
         return obj
 
 args = json.loads('${JSON.stringify(args)}')
-result = ${toolName}(**args)
+if '${toolName}' == 'search_contacts':
+    result = ${toolName}(args['query'])
+elif '${toolName}' == 'get_contact_chats':
+    result = ${toolName}(args['jid'])
+elif '${toolName}' == 'get_chat':
+    result = ${toolName}(args['chat_jid'], args.get('include_last_message', True))
+elif '${toolName}' == 'get_last_interaction':
+    result = ${toolName}(args['jid'])
+elif '${toolName}' == 'send_message':
+    result = ${toolName}(args['recipient'], args['message'])
+elif '${toolName}' == 'send_file':
+    result = ${toolName}(args['recipient'], args['file_path'], args.get('caption'))
+elif '${toolName}' == 'download_media':
+    result = ${toolName}(args['message_id'], args['chat_jid'])
+else:
+    result = ${toolName}(**args)
 serialized = serialize_result(result)
 print(json.dumps(serialized))
       `
