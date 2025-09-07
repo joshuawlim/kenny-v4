@@ -1,0 +1,993 @@
+{
+  "name": "My workflow",
+  "nodes": [
+    {
+      "parameters": {
+        "content": "## Webhook to Router in Ollama\nThis routes the query to the right tool",
+        "height": 528,
+        "width": 896,
+        "color": 2
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        48,
+        -464
+      ],
+      "typeVersion": 1,
+      "id": "8def6db5-652c-4afc-afd2-ec44c425e9c8",
+      "name": "Sticky Note"
+    },
+    {
+      "parameters": {
+        "content": "## Ready-to-Use Apple MCP Node Configurations",
+        "height": 528,
+        "width": 896,
+        "color": 2
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        48,
+        128
+      ],
+      "typeVersion": 1,
+      "id": "c92c480c-81d8-40ce-b52b-5349c99a6609",
+      "name": "Sticky Note1"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "http://host.docker.internal:3003/notes/create",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "title",
+              "value": "={{ $json.title }}"
+            },
+            {
+              "name": "body",
+              "value": "={{ $json.content }}"
+            },
+            {
+              "name": "folderName",
+              "value": "Kenny"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        160,
+        240
+      ],
+      "id": "f5bec954-b8f8-48c2-a4a3-d2bd0fd8762e",
+      "name": "1. Create Apple Note"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "http://host.docker.internal:3003/mail/send",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "to",
+              "value": "={{ $json.recipient }}"
+            },
+            {
+              "name": "subject",
+              "value": "={{ $json.subject }}\""
+            },
+            {
+              "name": "body",
+              "value": "={{ $json.emailBody }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        160,
+        448
+      ],
+      "id": "1a66fbc5-adbd-4063-aaeb-9169d7e3b2cb",
+      "name": "2. Send Email via Apple Mail"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "http://host.docker.internal:3003/messages/send",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "phoneNumber",
+              "value": "={{ $json.phone }}"
+            },
+            {
+              "name": "message",
+              "value": "={{ $json.text }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        416,
+        240
+      ],
+      "id": "f7f2cb97-46fa-452e-803a-e763b339b923",
+      "name": "3. Send iMessage / SMS"
+    },
+    {
+      "parameters": {
+        "url": "http://host.docker.internal:3003/contacts/search?name={{ $json.searchName }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        416,
+        448
+      ],
+      "id": "6c8c6175-a094-4a02-a7d8-d9cc0a346292",
+      "name": "4. Search Contacts"
+    },
+    {
+      "parameters": {
+        "mode": "raw",
+        "jsonOutput": "{\n  \"title\": \"Test Note\",\n  \"content\": \"This note was created via n8n workflow\",\n  \"recipient\": \"test@example.com\", \n  \"subject\": \"Test from Kenny\",\n  \"phone\": \"+1234567890\",\n  \"searchName\": \"Sarah\",\n  \"text\": \"This is a testing message.\"\n}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        -144,
+        368
+      ],
+      "id": "a05ef0b6-be0b-46b4-ac43-8adfb42c7df2",
+      "name": "Edit Fields"
+    },
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "kenny-fixed",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "id": "60dbe6c2-3ad3-48e4-8343-002fe0c93a92",
+      "name": "Webhook1",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 1,
+      "position": [
+        176,
+        -256
+      ],
+      "webhookId": "c45cf465-cbdb-4113-b83d-48aa30c237de"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "http://host.docker.internal:11434/api/generate",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n    \"model\": \"qwen2.5:7b-instruct\",\n    \"prompt\": \"You are an intent classifier. Classify this query into exactly ONE category: search, digest, calendar, memory, or general.\\n\\n**CATEGORY RULES:**\\n• calendar: scheduling, meetings, appointments, events, \\\"today\\\", \\\"tomorrow\\\", \\\"this week\\\" (time-based)\\n• search: \\\"find\\\", \\\"lookup\\\", \\\"information about\\\", \\\"research\\\", documents, data retrieval\\n• digest: \\\"summary\\\", \\\"report\\\", \\\"analytics\\\", \\\"insights\\\", \\\"what happened\\\" (analysis/reporting)\\n• memory: \\\"who is\\\", \\\"remember\\\", contacts, relationships, personal information storage/retrieval\\n• general: greetings (\\\"hello\\\", \\\"how are you\\\"), thanks, casual conversation, everything else\\n\\n**EXAMPLES:**\\n• \\\"what happened this week?\\\" → digest (asking for summary)\\n• \\\"who is John Doe?\\\" → memory (person lookup)\\n• \\\"how are you doing?\\\" → general (casual conversation)\\n• \\\"thank you\\\" → general (social nicety)\\n\\n**Query:** {{ $json.body.message }}\\n\\n**Category:**\",\n    \"stream\": false,\n    \"options\": {\n      \"temperature\": 0.1\n    }\n  }",
+        "options": {}
+      },
+      "id": "c25234a1-6066-44f5-9142-36ab7429282c",
+      "name": "Classify Intent1",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4,
+      "position": [
+        416,
+        -256
+      ]
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={\n    \"intent\": \"{{ $json.response }}\",\n    \"message\": \"{{ $('Webhook1').first().json.body.message }}\",\n    \"response\": \"I received your {{ $json.response }} request: \\\"{{ $('Webhook1').first().json.body.message }}\\\"\",\n    \"timestamp\": \"{{ new Date().toISOString() }}\",\n    \"status\": \"success\"\n  }",
+        "options": {}
+      },
+      "id": "034a6c6d-d158-4f16-8968-b0501e266a08",
+      "name": "Response1",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1,
+      "position": [
+        656,
+        -256
+      ]
+    },
+    {
+      "parameters": {
+        "content": "## Whatsapp MCPs",
+        "height": 992,
+        "width": 912
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        1424,
+        -464
+      ],
+      "typeVersion": 1,
+      "id": "dc8f818a-9f10-4adc-9695-305b2507adb2",
+      "name": "Sticky Note2"
+    },
+    {
+      "parameters": {
+        "height": 1936,
+        "width": 2272
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        1456,
+        720
+      ],
+      "typeVersion": 1,
+      "id": "8cdd0c72-276e-4fd4-9807-387e69876801",
+      "name": "Sticky Note3"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "http://localhost:3001/mcp/tools/call",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "tool",
+              "value": "={{ $json.action }}"
+            },
+            {
+              "name": "arguments",
+              "value": "={{ JSON.stringify($json.arguments || {}) }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "67ca5833-8cca-4782-b036-504d5ea19a63",
+      "name": "Apple Calendar Action",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1760,
+        928
+      ]
+    },
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "apple-calendar-fixed",
+        "options": {}
+      },
+      "id": "7075debd-bed1-4af4-affd-d8d036366b45",
+      "name": "Webhook5",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 1,
+      "position": [
+        1536,
+        928
+      ],
+      "webhookId": "fc10631d-a1ac-406d-8c83-445f2a924ea7"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "http://localhost:3001/mcp/tools/call",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "tool",
+              "value": "contacts_search"
+            },
+            {
+              "name": "arguments",
+              "value": "={{ JSON.stringify({ query: $json.query }) }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "568b4096-5d6c-47eb-9477-e8e8ad805941",
+      "name": "Search Apple Contacts",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1760,
+        1088
+      ]
+    },
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "apple-contacts-fixed",
+        "options": {}
+      },
+      "id": "97fc5875-e153-4dd3-a08a-25f050a27409",
+      "name": "Webhook6",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 1,
+      "position": [
+        1536,
+        1088
+      ],
+      "webhookId": "3bcdf9fd-38ef-42c9-ab5a-7277e45af670"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "http://localhost:3001/mcp/tools/call",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "tool",
+              "value": "={{ $json.action }}"
+            },
+            {
+              "name": "arguments",
+              "value": "={{ JSON.stringify($json.arguments || {}) }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "ebf58493-f228-4ec0-85b3-a54466d7af42",
+      "name": "Apple Mail Action",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1760,
+        1264
+      ]
+    },
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "apple-mail-fixed",
+        "options": {}
+      },
+      "id": "2f33889e-a15b-4549-a4d2-e6afe05cc913",
+      "name": "Webhook7",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 1,
+      "position": [
+        1536,
+        1264
+      ],
+      "webhookId": "4c7c1689-7e1e-476d-bd38-c71767e31e34"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "http://localhost:3001/mcp/tools/call",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "tool",
+              "value": "={{ $json.action }}"
+            },
+            {
+              "name": "arguments",
+              "value": "={{ JSON.stringify($json.arguments || {}) }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "18c7f479-a3ff-4bdf-8f03-d7cedb727b80",
+      "name": "Apple Messages Action",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1760,
+        1440
+      ]
+    },
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "apple-messages-fixed",
+        "options": {}
+      },
+      "id": "64cd069d-59f8-4144-bf33-bec43c001b11",
+      "name": "Webhook8",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 1,
+      "position": [
+        1536,
+        1440
+      ],
+      "webhookId": "bb4c4824-107f-457f-827a-98be0bd5dbf0"
+    },
+    {
+      "parameters": {
+        "dataType": "string",
+        "value1": "={{ $json.intent }}",
+        "rules": {
+          "rules": [
+            {
+              "value2": "contacts"
+            },
+            {
+              "value2": "messages",
+              "output": 1
+            },
+            {
+              "value2": "mail",
+              "output": 2
+            },
+            {
+              "value2": "calendar",
+              "output": 3
+            }
+          ]
+        }
+      },
+      "id": "c8f9b02d-a6da-4b1a-a936-c611e9078f6e",
+      "name": "Route by Intent",
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 1,
+      "position": [
+        1760,
+        1824
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "http://localhost:5678/webhook/apple-contacts-fixed",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "query",
+              "value": "={{ $json.query }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "eb55fba9-2611-4b8c-b571-3d68cb755e19",
+      "name": "Call Contacts Workflow",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1968,
+        1712
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "http://localhost:5678/webhook/apple-messages-fixed",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "action",
+              "value": "={{ $json.action }}"
+            },
+            {
+              "name": "arguments",
+              "value": "={{ JSON.stringify($json.arguments || {}) }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "0e3533c0-4ef1-4502-9fb6-2751ed6915ac",
+      "name": "Call Messages Workflow",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1968,
+        1824
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "http://localhost:5678/webhook/apple-mail-fixed",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "action",
+              "value": "={{ $json.action }}"
+            },
+            {
+              "name": "arguments",
+              "value": "={{ JSON.stringify($json.arguments || {}) }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "b5d9c4b6-83fd-454b-9290-39e516b39fd8",
+      "name": "Call Mail Workflow",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1968,
+        1920
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "http://localhost:5678/webhook/apple-calendar-fixed",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "action",
+              "value": "={{ $json.action }}"
+            },
+            {
+              "name": "arguments",
+              "value": "={{ JSON.stringify($json.arguments || {}) }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "3bc892d0-85bf-4e78-b7f5-ffdbed157992",
+      "name": "Call Calendar Workflow",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1968,
+        2016
+      ]
+    },
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "apple-mcp-router-fixed",
+        "options": {}
+      },
+      "id": "b921558b-826b-4866-b089-530bda7bc894",
+      "name": "Webhook9",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 1,
+      "position": [
+        1536,
+        1824
+      ],
+      "webhookId": "ab5738e2-238d-4194-8368-096509d80b25"
+    },
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "whatsapp-chats-docker",
+        "responseMode": "lastNode",
+        "responseData": "allEntries",
+        "options": {}
+      },
+      "id": "b48a8b5c-cb9d-4d6f-bb2a-02f9c58181fd",
+      "name": "Webhook",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 1,
+      "position": [
+        1680,
+        -352
+      ],
+      "webhookId": "4780c66e-a304-4af9-87b5-d18b3753ecfe"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "http://host.docker.internal:3004/list-chats",
+        "options": {}
+      },
+      "id": "963b04f2-09d6-464c-8d28-e592b303cca6",
+      "name": "List WhatsApp Chats",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1904,
+        -352
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "http://host.docker.internal:3004/search-contacts",
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            {
+              "name": "=query",
+              "value": "={{ $json.body.query }}"
+            }
+          ]
+        },
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "=query",
+              "value": "={{ $json.body.query }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "3bf0ca77-71c0-4b22-9d67-30c5a68fbc80",
+      "name": "Search WhatsApp Contacts",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1904,
+        -112
+      ]
+    },
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "whatsapp-contacts-docker",
+        "options": {}
+      },
+      "id": "adfcbcfa-0b43-41d6-9c95-5d22af5423e8",
+      "name": "Webhook2",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 1,
+      "position": [
+        1680,
+        -112
+      ],
+      "webhookId": "a7d75675-d30d-48a8-93db-28f25857858f"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "http://host.docker.internal:3004/list-messages",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "query",
+              "value": "={{ $json.query }}"
+            },
+            {
+              "name": "limit",
+              "value": "={{ $json.body.limit }}"
+            },
+            {
+              "name": "sender_phone_number",
+              "value": "={{ $json.body.sender_phone }}"
+            },
+            {
+              "name": "chat_jid",
+              "value": "={{ $json.body.chat_jid }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "65cbaa7c-e985-489a-952d-a3e85b2c4884",
+      "name": "Search WhatsApp Messages",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1904,
+        112
+      ]
+    },
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "whatsapp-search-docker",
+        "options": {}
+      },
+      "id": "032b272c-49cb-4db0-8ea5-f0334df7a429",
+      "name": "Webhook3",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 1,
+      "position": [
+        1680,
+        112
+      ],
+      "webhookId": "c5739b6e-29d7-48e7-b2f9-62a5e5ded845"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Edit Fields": {
+      "main": [
+        [
+          {
+            "node": "1. Create Apple Note",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "2. Send Email via Apple Mail",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "3. Send iMessage / SMS",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "4. Search Contacts",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Webhook1": {
+      "main": [
+        [
+          {
+            "node": "Classify Intent1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Classify Intent1": {
+      "main": [
+        [
+          {
+            "node": "Response1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Webhook5": {
+      "main": [
+        [
+          {
+            "node": "Apple Calendar Action",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Webhook6": {
+      "main": [
+        [
+          {
+            "node": "Search Apple Contacts",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Webhook7": {
+      "main": [
+        [
+          {
+            "node": "Apple Mail Action",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Webhook8": {
+      "main": [
+        [
+          {
+            "node": "Apple Messages Action",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Route by Intent": {
+      "main": [
+        [
+          {
+            "node": "Call Contacts Workflow",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Call Messages Workflow",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Call Mail Workflow",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Call Calendar Workflow",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Webhook9": {
+      "main": [
+        [
+          {
+            "node": "Route by Intent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Webhook": {
+      "main": [
+        [
+          {
+            "node": "List WhatsApp Chats",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Webhook2": {
+      "main": [
+        [
+          {
+            "node": "Search WhatsApp Contacts",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Webhook3": {
+      "main": [
+        [
+          {
+            "node": "Search WhatsApp Messages",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "64c6b080-f1c7-4b85-9197-ae3289c46d91",
+  "meta": {
+    "instanceId": "73b32aadb4839d90e268f4f054977aceed557296201ca158342388a6950d0fce"
+  },
+  "id": "H9VBRR2ytQQwZC4n",
+  "tags": []
+}
