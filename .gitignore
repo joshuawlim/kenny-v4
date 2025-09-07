@@ -1,5 +1,4 @@
 local-ai-packaged/
-working_n8n_files/
 
 # Environment variables and secrets
 .env
