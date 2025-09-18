@@ -1,0 +1,543 @@
+{
+  "createdAt": "2025-09-18T10:08:08.086Z",
+  "updatedAt": "2025-09-18T10:20:11.967Z",
+  "id": "dJdrx2Ie1xfDSLGD",
+  "name": "Kenny Conversational Router",
+  "active": false,
+  "isArchived": true,
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "kenny-router",
+        "options": {}
+      },
+      "id": "1244a0fd-ad40-4415-87cf-af7d248351de",
+      "name": "Kenny Webhook",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 1,
+      "position": [
+        -624,
+        16
+      ],
+      "webhookId": "kenny-router"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "session_id",
+              "name": "session_id",
+              "value": "={{ $json.session_id || 'default' }}",
+              "type": "string"
+            },
+            {
+              "id": "user_message",
+              "name": "user_message",
+              "value": "={{ $json.body.message }}",
+              "type": "string"
+            },
+            {
+              "id": "user_info",
+              "name": "query",
+              "value": "={{ $json.query }}",
+              "type": "object"
+            },
+            {
+              "id": "conversation_history",
+              "name": "conversation_history",
+              "value": "={{ $json.conversation_history || [] }}",
+              "type": "array"
+            },
+            {
+              "id": "timestamp",
+              "name": "timestamp",
+              "value": "={{ $json.timestamp || Date.now() }}",
+              "type": "number"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "2710f9b7-5ba3-4e0d-81de-b0d3b5d600b0",
+      "name": "Extract Context",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        -416,
+        16
+      ]
+    },
+    {
+      "parameters": {
+        "rules": {
+          "values": [
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 1
+                },
+                "conditions": [
+                  {
+                    "leftValue": "={{ JSON.parse($json.response).intent }}",
+                    "rightValue": "calendar",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    },
+                    "id": "82daddfb-128c-4daa-a857-6d29d0a1dca5"
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "calendar"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 1
+                },
+                "conditions": [
+                  {
+                    "leftValue": "={{ JSON.parse($json.response).intent }}",
+                    "rightValue": "search",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    },
+                    "id": "de520b38-6b4b-4e6c-b0c7-a6b51a1a9977"
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "search"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 1
+                },
+                "conditions": [
+                  {
+                    "leftValue": "={{ JSON.parse($json.response).intent }}",
+                    "rightValue": "whatsapp",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    },
+                    "id": "ecff2d22-99ae-4345-9798-af7a2c2f0faf"
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "whatsapp"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 1
+                },
+                "conditions": [
+                  {
+                    "leftValue": "={{ JSON.parse($json.response).intent }}",
+                    "rightValue": "mail",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    },
+                    "id": "bfbb243c-d861-409c-99c7-4a120f9ccd0a"
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "mail"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 1
+                },
+                "conditions": [
+                  {
+                    "leftValue": "={{ JSON.parse($json.response).intent }}",
+                    "rightValue": "memory",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    },
+                    "id": "788d6798-9684-45fe-873f-610cd87fa0af"
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "memory"
+            }
+          ]
+        },
+        "options": {
+          "fallbackOutput": "extra"
+        }
+      },
+      "id": "66e5b3a1-2f50-4738-a0fa-a8f7a14c7bd7",
+      "name": "Intent Router",
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 3,
+      "position": [
+        128,
+        16
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "http://host.docker.internal:3003/apple/calendar",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "httpBasicAuth",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "action",
+              "value": "=search"
+            },
+            {
+              "name": "query",
+              "value": "={{ $('Extract Context').item.json.user_message }}"
+            },
+            {
+              "name": "context",
+              "value": "={{ $('Extract Context').item.json.conversation_history }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "d026133c-152e-4de9-8a46-de1552687689",
+      "name": "Calendar Agent",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        336,
+        -192
+      ],
+      "credentials": {
+        "httpBasicAuth": {
+          "id": "nRWA9Xw1YKpPzQ0C",
+          "name": "Unnamed credential"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "http://host.docker.internal:3004/search",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "query",
+              "value": "={{ $('Extract Context').item.json.user_message }}"
+            },
+            {
+              "name": "limit",
+              "value": "=5"
+            },
+            {
+              "name": "context",
+              "value": "={{ $('Extract Context').item.json.conversation_history }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "36d65de7-b3bd-4696-b678-08827f789f72",
+      "name": "WhatsApp Agent",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        336,
+        16
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "http://host.docker.internal:3003/apple/mail",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "action",
+              "value": "=search"
+            },
+            {
+              "name": "query",
+              "value": "={{ $('Extract Context').item.json.user_message }}"
+            },
+            {
+              "name": "limit",
+              "value": "=5"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "6416792f-ea08-4668-9498-cc9c80057c9e",
+      "name": "Mail Agent",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        336,
+        160
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Search Agent - Vector search across all data sources\nconst userMessage = $('Extract Context').item.json.user_message;\nconst conversationHistory = $('Extract Context').item.json.conversation_history;\n\n// Simulate vector search across multiple sources\n// In production, this would call Supabase vector search\nconst searchResults = {\n  emails: [],\n  messages: [],\n  notes: [],\n  contacts: []\n};\n\n// Mock search response\nconst response = {\n  results: searchResults,\n  summary: `I searched for \"${userMessage}\" across your emails, messages, and notes. Here's what I found: [search results would appear here]`,\n  sources: ['email', 'messages', 'notes'],\n  total_results: 0\n};\n\nreturn [{ json: response }];"
+      },
+      "id": "bf31b55c-4487-488d-8441-40698a54a0b3",
+      "name": "Search Agent",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        336,
+        -96
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Memory Agent - Contact and relationship information\nconst userMessage = $('Extract Context').item.json.user_message;\n\n// Mock contact memory response\nconst response = {\n  contacts_found: [],\n  memories: [],\n  summary: `I searched your contact memory for \"${userMessage}\". [Contact information would appear here]`,\n  suggestions: []\n};\n\nreturn [{ json: response }];"
+      },
+      "id": "7e718f16-9d0c-4062-87ec-ee1454cea414",
+      "name": "Memory Agent",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        336,
+        320
+      ]
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "response",
+              "name": "response",
+              "value": "={{ $json.response }}",
+              "type": "string"
+            },
+            {
+              "id": "intent",
+              "name": "intent",
+              "value": "={{ JSON.parse($('Intent Classifier').item.json.response).intent }}",
+              "type": "string"
+            },
+            {
+              "id": "confidence",
+              "name": "confidence",
+              "value": "={{ JSON.parse($('Intent Classifier').item.json.response).confidence }}",
+              "type": "number"
+            },
+            {
+              "id": "timestamp",
+              "name": "timestamp",
+              "value": "={{ Date.now() }}",
+              "type": "number"
+            },
+            {
+              "id": "session_id",
+              "name": "session_id",
+              "value": "={{ $('Extract Context').item.json.session_id }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "35bd6df9-1e10-4b1c-960d-b9220053832d",
+      "name": "Format Response",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        784,
+        16
+      ]
+    },
+    {
+      "parameters": {
+        "batching": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.chainLlm",
+      "typeVersion": 1.7,
+      "position": [
+        -240,
+        16
+      ],
+      "id": "6bdf0731-6ec8-4cbd-83c7-6d009ca444c8",
+      "name": "Basic LLM Chain"
+    },
+    {
+      "parameters": {
+        "model": "qwen2.5:7b-instruct",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmOllama",
+      "typeVersion": 1,
+      "position": [
+        -320,
+        432
+      ],
+      "id": "264a81a4-bb66-408f-9b49-8d103cde8571",
+      "name": "Ollama Model",
+      "credentials": {
+        "ollamaApi": {
+          "id": "NgX3UArgNgQf2EEJ",
+          "name": "Ollama account"
+        }
+      }
+    }
+  ],
+  "connections": {
+    "Kenny Webhook": {
+      "main": [
+        [
+          {
+            "node": "Extract Context",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Intent Router": {
+      "main": [
+        [
+          {
+            "node": "Calendar Agent",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Search Agent",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "WhatsApp Agent",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Mail Agent",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Memory Agent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Ollama Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Basic LLM Chain",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Extract Context": {
+      "main": [
+        [
+          {
+            "node": "Basic LLM Chain",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "staticData": null,
+  "meta": {
+    "templateCredsSetupCompleted": true
+  },
+  "pinData": {},
+  "versionId": "178d5cf7-765d-4f4e-9427-cbff799512bb",
+  "triggerCount": 0,
+  "shared": [
+    {
+      "createdAt": "2025-09-18T10:08:08.086Z",
+      "updatedAt": "2025-09-18T10:08:08.086Z",
+      "role": "workflow:owner",
+      "workflowId": "dJdrx2Ie1xfDSLGD",
+      "projectId": "obseycR3sPcn5ZbS"
+    }
+  ],
+  "tags": []
+}
