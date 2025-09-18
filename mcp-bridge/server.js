@@ -228,7 +228,8 @@ app.post('/calendar/create-event', async (req, res) => {
       });
     }
 
-    const result = await mcpClient.callTool('create_calendar_event', {
+    const result = await mcpClient.callTool('calendar', {
+      operation: 'create',
       title,
       startDate,
       endDate,
@@ -248,11 +249,13 @@ app.post('/calendar/create-event', async (req, res) => {
 
 app.get('/calendar/events', async (req, res) => {
   try {
-    const { startDate, endDate } = req.query;
+    const { startDate, endDate, limit = 20 } = req.query;
     
-    const result = await mcpClient.callTool('get_calendar_events', {
-      startDate,
-      endDate
+    const result = await mcpClient.callTool('calendar', {
+      operation: 'list',
+      fromDate: startDate,
+      toDate: endDate,
+      limit: parseInt(limit)
     });
 
     res.json({ success: true, result });

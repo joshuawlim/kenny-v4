@@ -102,6 +102,14 @@ The router classifies queries into these categories:
 - **Body:** `{"message": "your query here"}`
 - **Response:** JSON with response, intent, timestamp, and status
 
+## Webhook Endpoint for Testing
+
+Bash command for Endpoint testing
+
+curl -X POST "http://localhost:5678/webhook-test/kenny-router" 
+   -H "Content-Type: application/json" 
+   -d '{"message": "What's the next meeting I have?"}'
+
 ## Next Steps
 
 1. Complete router testing with all categories
