@@ -1,0 +1,385 @@
+{
+  "name": "Kenny Main Router Fixed",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "kenny-main-router",
+        "options": {
+          "noResponseBody": false
+        }
+      },
+      "id": "webhook-main-router",
+      "name": "Main Router Webhook",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 1,
+      "position": [240, 400]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Enhanced intent classification with better keyword matching\nconst message = $json.message || $json.query || '';\nconst messageLower = message.toLowerCase();\n\n// Define comprehensive keyword patterns\nconst patterns = {\n  calendar: [\n    /\\b(meeting|appointment|event|schedule|calendar|today|tomorrow|this week|next week)\\b/i,\n    /\\b(what.*meetings?|when.*meeting|meeting.*today|calendar.*event)\\b/i,\n    /\\b(free.*time|busy|available|book|schedule.*call)\\b/i\n  ],\n  mail: [\n    /\\b(email|mail|inbox|unread|send.*email|compose|draft)\\b/i,\n    /\\b(check.*mail|new.*email|email.*from|reply.*email)\\b/i\n  ],\n  contacts: [\n    /\\b(contact|phone.*number|address|find.*person|call|text)\\b/i,\n    /\\b(who.*is|contact.*info|phone.*book|directory)\\b/i\n  ],\n  messages: [\n    /\\b(message|text|sms|imessage|send.*text|chat)\\b/i,\n    /\\b(text.*someone|message.*to|send.*sms)\\b/i\n  ],\n  search: [\n    /\\b(search|find|look.*for|locate|where.*is)\\b/i,\n    /\\b(show.*me|get.*info|information.*about)\\b/i\n  ],\n  memory: [\n    /\\b(remember|recall|what.*did|previous|history|before)\\b/i,\n    /\\b(last.*time|earlier|ago|memory|remind.*me)\\b/i\n  ],\n  general: [\n    /\\b(help|how.*to|what.*is|explain|tell.*me)\\b/i\n  ]\n};\n\n// Score each intent\nconst scores = {};\nObject.keys(patterns).forEach(intent => {\n  scores[intent] = 0;\n  patterns[intent].forEach(pattern => {\n    if (pattern.test(message)) {\n      scores[intent] += 1;\n    }\n  });\n});\n\n// Find the highest scoring intent\nlet bestIntent = 'general';\nlet bestScore = 0;\nObject.keys(scores).forEach(intent => {\n  if (scores[intent] > bestScore) {\n    bestIntent = intent;\n    bestScore = scores[intent];\n  }\n});\n\n// Special case: if no clear match and contains question words, classify as search\nif (bestScore === 0 && /\\b(what|when|where|who|how|why)\\b/i.test(message)) {\n  bestIntent = 'search';\n}\n\nreturn [{\n  json: {\n    message: message,\n    intent: bestIntent,\n    confidence: bestScore > 0 ? Math.min(bestScore / patterns[bestIntent].length, 1.0) : 0.5,\n    scores: scores,\n    timestamp: new Date().toISOString()\n  }\n}];"
+      },
+      "id": "intent-classifier",
+      "name": "Intent Classifier",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [460, 400]
+    },
+    {
+      "parameters": {
+        "dataType": "string",
+        "value1": "={{ $json.intent }}",
+        "rules": {
+          "rules": [
+            {
+              "value2": "calendar",
+              "output": 0
+            },
+            {
+              "value2": "mail",
+              "output": 1
+            },
+            {
+              "value2": "contacts",
+              "output": 2
+            },
+            {
+              "value2": "messages",
+              "output": 3
+            },
+            {
+              "value2": "search",
+              "output": 4
+            },
+            {
+              "value2": "memory",
+              "output": 5
+            }
+          ]
+        }
+      },
+      "id": "intent-switch",
+      "name": "Route by Intent",
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 1,
+      "position": [680, 400]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "http://localhost:5678/webhook/apple-calendar-fixed",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "operation",
+              "value": "search"
+            },
+            {
+              "name": "query",
+              "value": "={{ $json.message }}"
+            },
+            {
+              "name": "intent",
+              "value": "calendar"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "route-calendar",
+      "name": "Calendar Handler",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [900, 200]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "http://localhost:5678/webhook/apple-mail-search",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "operation",
+              "value": "search"
+            },
+            {
+              "name": "query",
+              "value": "={{ $json.message }}"
+            },
+            {
+              "name": "intent",
+              "value": "mail"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "route-mail",
+      "name": "Mail Handler",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [900, 300]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "http://localhost:5678/webhook/apple-contacts-fixed",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "query",
+              "value": "={{ $json.message }}"
+            },
+            {
+              "name": "intent",
+              "value": "contacts"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "route-contacts",
+      "name": "Contacts Handler",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [900, 400]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "http://localhost:5678/webhook/apple-messages-fixed",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "action",
+              "value": "send"
+            },
+            {
+              "name": "query",
+              "value": "={{ $json.message }}"
+            },
+            {
+              "name": "intent",
+              "value": "messages"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "route-messages",
+      "name": "Messages Handler",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [900, 500]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "http://localhost:8000/rest/v1/rpc/search_conversations",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            },
+            {
+              "name": "apikey",
+              "value": "={{ $env.SUPABASE_ANON_KEY }}"
+            }
+          ]
+        },
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "search_query",
+              "value": "={{ $json.message }}"
+            },
+            {
+              "name": "match_count",
+              "value": "5"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "route-search",
+      "name": "Search Handler",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [900, 600]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "http://localhost:8000/rest/v1/rpc/search_conversations",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            },
+            {
+              "name": "apikey",
+              "value": "={{ $env.SUPABASE_ANON_KEY }}"
+            }
+          ]
+        },
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "search_query",
+              "value": "={{ $json.message }}"
+            },
+            {
+              "name": "match_count",
+              "value": "3"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "route-memory",
+      "name": "Memory Handler",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [900, 700]
+    },
+    {
+      "parameters": {
+        "jsCode": "// General fallback handler - route to Ollama for general queries\nconst message = $json.message;\nconst intent = $json.intent;\n\n// Prepare response for general queries\nconst response = {\n  success: true,\n  intent: intent,\n  message: `I received your ${intent} request: \"${message}\". This would typically be routed to an LLM for general conversation.`,\n  routing: 'general_fallback',\n  timestamp: new Date().toISOString()\n};\n\nreturn [{ json: response }];"
+      },
+      "id": "general-handler",
+      "name": "General Handler",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [900, 800]
+    }
+  ],
+  "connections": {
+    "Main Router Webhook": {
+      "main": [
+        [
+          {
+            "node": "Intent Classifier",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Intent Classifier": {
+      "main": [
+        [
+          {
+            "node": "Route by Intent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Route by Intent": {
+      "main": [
+        [
+          {
+            "node": "Calendar Handler",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Mail Handler",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Contacts Handler",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Messages Handler",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Search Handler",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Memory Handler",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "General Handler",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "id": "kenny-main-router-fixed",
+  "tags": ["kenny", "router", "main", "intent"]
+}

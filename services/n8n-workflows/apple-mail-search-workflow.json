@@ -1,0 +1,364 @@
+{
+  "name": "Apple Mail Search & Processing Workflow",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "apple-mail-search",
+        "options": {}
+      },
+      "id": "webhook-mail-search",
+      "name": "Mail Search Webhook",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 1,
+      "position": [240, 300]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict"
+          },
+          "conditions": [
+            {
+              "leftValue": "={{ $json.operation }}",
+              "rightValue": "search",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "if-search-operation",
+      "name": "Is Search Operation?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [460, 300]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "http://localhost:3003/mail/search",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "operation",
+              "value": "search"
+            },
+            {
+              "name": "searchTerm",
+              "value": "={{ $json.query }}"
+            },
+            {
+              "name": "limit",
+              "value": "={{ $json.limit || 10 }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "search-apple-mail",
+      "name": "Search Apple Mail",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [680, 200]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "http://localhost:8000/rest/v1/rpc/search_emails",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            },
+            {
+              "name": "apikey",
+              "value": "={{ $env.SUPABASE_ANON_KEY }}"
+            }
+          ]
+        },
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "search_query",
+              "value": "={{ $json.query }}"
+            },
+            {
+              "name": "match_threshold",
+              "value": "0.7"
+            },
+            {
+              "name": "match_count",
+              "value": "={{ $json.limit || 10 }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "search-email-database",
+      "name": "Search Email Database",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [680, 400]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Combine results from Apple Mail and database\nconst appleResults = $input.first()?.json || [];\nconst dbResults = $input.last()?.json || [];\n\n// Transform Apple Mail results\nconst appleEmails = Array.isArray(appleResults) ? appleResults.map(email => ({\n  source: 'apple_mail_live',\n  ...email,\n  relevance: 1.0\n})) : [];\n\n// Transform database results\nconst dbEmails = Array.isArray(dbResults) ? dbResults.map(email => ({\n  source: 'apple_mail_stored',\n  ...email,\n  relevance: email.similarity || 0.8\n})) : [];\n\n// Combine and deduplicate by message_id\nconst combined = [...appleEmails, ...dbEmails];\nconst uniqueEmails = new Map();\n\ncombined.forEach(email => {\n  const id = email.message_id || email.subject + email.sender;\n  if (!uniqueEmails.has(id) || email.relevance > uniqueEmails.get(id).relevance) {\n    uniqueEmails.set(id, email);\n  }\n});\n\nconst results = Array.from(uniqueEmails.values())\n  .sort((a, b) => b.relevance - a.relevance)\n  .slice(0, $json.limit || 10);\n\nreturn [{\n  json: {\n    success: true,\n    count: results.length,\n    emails: results,\n    query: $json.query,\n    sources: ['apple_mail_live', 'apple_mail_stored']\n  }\n}];"
+      },
+      "id": "combine-results",
+      "name": "Combine Search Results",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [900, 300]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict"
+          },
+          "conditions": [
+            {
+              "leftValue": "={{ $json.operation }}",
+              "rightValue": "unread",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "if-unread-operation",
+      "name": "Is Unread Operation?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [460, 500]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "http://localhost:3003/mail/unread",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "operation",
+              "value": "unread"
+            },
+            {
+              "name": "limit",
+              "value": "={{ $json.limit || 10 }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "get-unread-mail",
+      "name": "Get Unread Mail",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [680, 500]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict"
+          },
+          "conditions": [
+            {
+              "leftValue": "={{ $json.operation }}",
+              "rightValue": "send",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "if-send-operation",
+      "name": "Is Send Operation?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [460, 700]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "http://localhost:3003/mail/send",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "operation",
+              "value": "send"
+            },
+            {
+              "name": "to",
+              "value": "={{ $json.to }}"
+            },
+            {
+              "name": "subject",
+              "value": "={{ $json.subject }}"
+            },
+            {
+              "name": "body",
+              "value": "={{ $json.body }}"
+            },
+            {
+              "name": "cc",
+              "value": "={{ $json.cc || '' }}"
+            },
+            {
+              "name": "bcc",
+              "value": "={{ $json.bcc || '' }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "send-email",
+      "name": "Send Email",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [680, 700]
+    }
+  ],
+  "connections": {
+    "Mail Search Webhook": {
+      "main": [
+        [
+          {
+            "node": "Is Search Operation?",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Is Unread Operation?",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Is Send Operation?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Is Search Operation?": {
+      "main": [
+        [
+          {
+            "node": "Search Apple Mail",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Search Email Database",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Search Apple Mail": {
+      "main": [
+        [
+          {
+            "node": "Combine Search Results",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Search Email Database": {
+      "main": [
+        [
+          {
+            "node": "Combine Search Results",
+            "type": "main",
+            "index": 1
+          }
+        ]
+      ]
+    },
+    "Is Unread Operation?": {
+      "main": [
+        [
+          {
+            "node": "Get Unread Mail",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Is Send Operation?": {
+      "main": [
+        [
+          {
+            "node": "Send Email",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "id": "apple-mail-search-workflow",
+  "tags": ["apple", "mail", "search", "kenny"]
+}

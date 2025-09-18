@@ -135,11 +135,12 @@
         "name": "Apple MCP Bridge",
         "port": 3003,
         "health_check": "http://localhost:3003/health",
-        "status": "planned",
-        "path": "./services/apple-mcp-bridge",
-        "start_command": "TBD",
+        "status": "active",
+        "path": "./mcp-bridge",
+        "start_command": "npm start",
         "dependencies": [],
-        "platform_required": "macOS"
+        "platform_required": "macOS",
+        "description": "HTTP bridge for Apple MCP tools (contacts, mail, messages, calendar, notes, reminders)"
       }
     },
     "external_dependencies": {

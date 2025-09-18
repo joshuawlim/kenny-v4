@@ -3,7 +3,7 @@ import cors from 'cors';
 import MCPClient from './mcp-client.js';
 
 const app = express();
-const PORT = process.env.PORT || 3001;
+const PORT = process.env.PORT || 3003;
 
 app.use(cors());
 app.use(express.json());
