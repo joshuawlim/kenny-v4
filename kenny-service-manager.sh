@@ -73,8 +73,10 @@ check_http_health() {
 
 check_tcp_health() {
     local host_port="$1"
-    local host=$(echo "$host_port" | cut -d: -f3 | cut -d/ -f1)
-    local port=$(echo "$host_port" | cut -d: -f4)
+    # Remove tcp:// prefix and parse host:port
+    local clean_url=$(echo "$host_port" | sed 's|tcp://||')
+    local host=$(echo "$clean_url" | cut -d: -f1)
+    local port=$(echo "$clean_url" | cut -d: -f2)
     nc -z "$host" "$port" > /dev/null 2>&1
 }
 
@@ -257,9 +259,48 @@ status_docker_service() {
 }
 
 # Main commands
+start_docker_services() {
+    log "Starting Docker services..."
+
+    # Check if Docker is running
+    if ! docker info > /dev/null 2>&1; then
+        error "Docker is not running. Please start Docker Desktop first."
+        return 1
+    fi
+
+    # Navigate to Docker directory
+    if [[ ! -d "$SCRIPT_DIR/local-ai-packaged" ]]; then
+        error "local-ai-packaged directory not found"
+        return 1
+    fi
+
+    cd "$SCRIPT_DIR/local-ai-packaged"
+
+    # Clean up any conflicting containers first
+    log "Cleaning up existing containers..."
+    docker-compose down --remove-orphans 2>/dev/null || true
+
+    # Force remove specifically conflicting containers
+    log "Removing conflicting containers..."
+    docker rm -f redis searxng supabase-imgproxy 2>/dev/null || true
+    docker container prune -f 2>/dev/null || true
+
+    # Start Docker services
+    log "Starting fresh Docker containers..."
+    if docker-compose up -d; then
+        success "Docker services started"
+    else
+        error "Failed to start Docker services"
+        return 1
+    fi
+}
+
 cmd_start() {
     log "Starting Kenny V4 services..."
-    
+
+    # Start Docker services first
+    start_docker_services
+
     # Start manual services in dependency order
     local manual_services=($(get_services "manual_services"))
     
@@ -281,17 +322,30 @@ cmd_start() {
     success "Kenny V4 service startup completed"
 }
 
+stop_docker_services() {
+    log "Stopping Docker services..."
+
+    if [[ -d "$SCRIPT_DIR/local-ai-packaged" ]]; then
+        cd "$SCRIPT_DIR/local-ai-packaged"
+        docker-compose down
+        success "Docker services stopped"
+    else
+        warn "local-ai-packaged directory not found"
+    fi
+}
+
 cmd_stop() {
     log "Stopping Kenny V4 services..."
-    
-    # Stop in reverse order
+
+    # Stop manual services first
     local manual_services=($(get_services "manual_services"))
-    
-    # Stop services
     for service in "${manual_services[@]}"; do
         stop_manual_service "$service"
     done
-    
+
+    # Stop Docker services
+    stop_docker_services
+
     success "Kenny V4 services stopped"
 }
 
@@ -390,7 +444,11 @@ main() {
     
     case "${1:-status}" in
         start)
-            cmd_start
+            if [[ "$2" == "docker" ]]; then
+                start_docker_services
+            else
+                cmd_start
+            fi
             ;;
         stop)
             cmd_stop

@@ -126,6 +126,7 @@
         "external_url": "ai.youroldmatekenny.com",
         "health_check": "https://ai.youroldmatekenny.com",
         "status": "active",
+        "path": ".",
         "start_command": "cloudflared tunnel run",
         "config_path": "~/.cloudflared/config.yml",
         "dependencies": ["open-webui"]
