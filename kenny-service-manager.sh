@@ -168,36 +168,56 @@ start_manual_service() {
 stop_manual_service() {
     local service_name="$1"
     local pid_file="$PID_DIR/${service_name}.pid"
-    
-    if [[ ! -f "$pid_file" ]]; then
-        warn "No PID file found for $service_name"
-        return 1
-    fi
-    
-    local pid=$(cat "$pid_file")
-    if kill -0 "$pid" 2>/dev/null; then
-        log "Stopping $service_name (PID: $pid)..."
-        kill "$pid"
-        
-        # Wait for graceful shutdown
-        local attempts=0
-        while [[ $attempts -lt 10 ]] && kill -0 "$pid" 2>/dev/null; do
-            sleep 1
-            ((attempts++))
-        done
-        
-        # Force kill if still running
+    local port=$(get_service_config "manual_services" "$service_name" "port")
+    local stopped=false
+
+    # Try to stop using PID file first
+    if [[ -f "$pid_file" ]]; then
+        local pid=$(cat "$pid_file")
         if kill -0 "$pid" 2>/dev/null; then
-            warn "Force killing $service_name"
-            kill -9 "$pid"
+            log "Stopping $service_name (PID: $pid)..."
+            kill "$pid"
+
+            # Wait for graceful shutdown
+            local attempts=0
+            while [[ $attempts -lt 10 ]] && kill -0 "$pid" 2>/dev/null; do
+                sleep 1
+                ((attempts++))
+            done
+
+            # Force kill if still running
+            if kill -0 "$pid" 2>/dev/null; then
+                warn "Force killing $service_name"
+                kill -9 "$pid"
+            fi
+
+            stopped=true
+            success "Stopped $service_name"
+        else
+            warn "Process $pid for $service_name not found, cleaning up PID file"
         fi
-        
-        success "Stopped $service_name"
+        rm -f "$pid_file"
     else
-        warn "Process $pid for $service_name not found"
+        warn "No PID file found for $service_name"
     fi
-    
-    rm -f "$pid_file"
+
+    # If no PID file or PID didn't work, try to kill by port
+    if [[ "$stopped" == "false" && "$port" != "null" ]]; then
+        log "Attempting to stop $service_name by port $port..."
+        local port_pids=$(lsof -ti :$port 2>/dev/null)
+        if [[ -n "$port_pids" ]]; then
+            for pid in $port_pids; do
+                log "Force killing process $pid using port $port"
+                kill -9 "$pid" 2>/dev/null
+            done
+            success "Stopped $service_name (by port)"
+            stopped=true
+        fi
+    fi
+
+    if [[ "$stopped" == "false" ]]; then
+        log "$service_name was not running"
+    fi
 }
 
 status_manual_service() {
@@ -337,16 +357,51 @@ stop_docker_services() {
 cmd_stop() {
     log "Stopping Kenny V4 services..."
 
-    # Stop manual services first
+    # Stop manual services first (continue even if some fail)
     local manual_services=($(get_services "manual_services"))
     for service in "${manual_services[@]}"; do
-        stop_manual_service "$service"
+        stop_manual_service "$service" || true
     done
 
     # Stop Docker services
     stop_docker_services
 
     success "Kenny V4 services stopped"
+}
+
+cmd_hard_stop() {
+    log "Performing HARD STOP of all Kenny V4 services..."
+
+    # Kill all processes by known ports aggressively
+    local ports=(3000 3001 3002 3003 3004 5678 8080 11434)
+    for port in "${ports[@]}"; do
+        local pids=$(lsof -ti :$port 2>/dev/null)
+        if [[ -n "$pids" ]]; then
+            log "Force killing processes on port $port: $pids"
+            echo $pids | xargs kill -9 2>/dev/null || true
+        fi
+    done
+
+    # Stop Docker services aggressively
+    log "Force stopping all Docker containers..."
+    if [[ -d "$SCRIPT_DIR/local-ai-packaged" ]]; then
+        cd "$SCRIPT_DIR/local-ai-packaged"
+        docker-compose down --remove-orphans --timeout 5 2>/dev/null || true
+        docker kill $(docker ps -q) 2>/dev/null || true
+    fi
+
+    # Clean up all PID files
+    log "Cleaning up PID files..."
+    rm -f "$PID_DIR"/*.pid 2>/dev/null || true
+
+    # Kill common Kenny processes by name
+    log "Killing processes by name..."
+    pkill -f "cloudflared" 2>/dev/null || true
+    pkill -f "whatsapp" 2>/dev/null || true
+    pkill -f "n8n" 2>/dev/null || true
+    pkill -f "flowise" 2>/dev/null || true
+
+    success "Hard stop completed - all Kenny V4 processes terminated"
 }
 
 cmd_status() {
@@ -453,6 +508,9 @@ main() {
         stop)
             cmd_stop
             ;;
+        hard-stop|hardstop)
+            cmd_hard_stop
+            ;;
         status)
             cmd_status
             ;;
@@ -467,15 +525,16 @@ main() {
             ;;
         *)
             echo "Kenny V4 Service Manager"
-            echo "Usage: $0 [start|stop|status|restart|health|logs [service_name]]"
+            echo "Usage: $0 [start|stop|hard-stop|status|restart|health|logs [service_name]]"
             echo ""
             echo "Commands:"
-            echo "  start   - Start all manual services"
-            echo "  stop    - Stop all manual services"
-            echo "  status  - Show service status"
-            echo "  restart - Restart all services"
-            echo "  health  - Run health checks"
-            echo "  logs    - Show logs (optionally for specific service)"
+            echo "  start     - Start all services"
+            echo "  stop      - Stop all services gracefully"
+            echo "  hard-stop - Force kill all Kenny services (aggressive)"
+            echo "  status    - Show service status"
+            echo "  restart   - Restart all services"
+            echo "  health    - Run health checks"
+            echo "  logs      - Show logs (optionally for specific service)"
             ;;
     esac
 }
